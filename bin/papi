@@ -5,22 +5,29 @@ if (php_sapi_name() !== 'cli') {
     exit;
 }
 
-$root_app = dirname(__DIR__);
+// ------------------------------------------
 
-if (!is_file($root_app . '/vendor/autoload.php')) {
+$root_app = dirname(__DIR__);
+$is_vendor_bin = !is_file($root_app . '/vendor/autoload.php');
+
+if ($is_vendor_bin) {
     $root_app = dirname(__DIR__, 4);
 }
+
+$app_path = $root_app . '/app/Command';
+
+if ($is_vendor_bin) {
+    $app_path = $root_app . '/vendor/aryeohq/papi/app/Command';
+}
+
+var_dump($app_path);
+
+// ------------------------------------------
 
 require $root_app . '/vendor/autoload.php';
 
 use Minicli\App;
 use Minicli\Command\CommandCall;
-
-$app_path = $root_app.'/app/Command';
-
-if (!is_file($root_app . '/vendor/autoload.php')) {
-    $app_path = $root_app.'/vendor/aryeohq/papi/app/Command';
-}
 
 $app = new App(['app_path' => $app_path], './papi help');
 $input = new CommandCall($argv);
