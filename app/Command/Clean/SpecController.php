@@ -60,12 +60,8 @@ class SpecController extends PapiController
     {
         parent::boot($app);
         $this->description = 'clean a spec file';
-        $this->arguments = [
-            ['api', 'name of the api', 'Aryeo'],
-            ['version', 'version to use', '2021-06-17'],
-        ];
         $this->parameters = [
-            ['pdir', 'project directory', '/Users/jdoe/Dev/aryeo'],
+            ['spath', 'path to spec file', '/Users/jdoe/Dev/aryeo/spec.json'],
         ];
         $this->notes = [
             'Cleaning a spec inserts standard error responses for known status',
@@ -78,23 +74,18 @@ class SpecController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $api = $args[0];
-            $version = $args[1];
-            $pdir = $this->getParam('pdir');
-            $this->cleanSpec($pdir, $api, $version);
+            $spath = $this->getParam('spath');
+            $this->cleanSpec($spath);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function cleanSpec($pdir, $api, $version)
+    public function cleanSpec($spec_file_path)
     {
-        $spec_file_path = PapiMethods::specFile($pdir, $api, $version);
-
-        if (empty($spec_file_path)) {
+        if (empty($spec_file_path) || !file_exists($spec_file_path) || !is_file($spec_file_path)) {
             $this->getPrinter()->out('error: unable to find spec file', 'error');
             $this->getPrinter()->newline();
-
             return;
         }
 
