@@ -16,7 +16,13 @@ require $root_app . '/vendor/autoload.php';
 use Minicli\App;
 use Minicli\Command\CommandCall;
 
-$app = new App(['app_path' => $root_app.'/app/Command'], './papi help');
+$app_path = $root_app.'/app/Command';
+
+if (!is_file($root_app . '/vendor/autoload.php')) {
+    $app_path = dirname(__DIR__).'../aryeohq/papi/app/Command';
+}
+
+$app = new App(['app_path' => $app_path], './papi help');
 $input = new CommandCall($argv);
 
 $app->runCommand($input->getRawArgs());
