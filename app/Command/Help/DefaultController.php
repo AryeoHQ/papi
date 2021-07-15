@@ -18,6 +18,6 @@ class DefaultController extends PapiController
         $this->printDescription();
         $this->printUsage();
         $this->printAllCommands();
-        $this->printSubcommandHelp();
+        $this->printSubCommandHelp();
     }
 }

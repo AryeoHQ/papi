@@ -12,13 +12,12 @@ class DiffController extends PapiController
     {
         parent::boot($app);
         $this->description = 'report the differences between two versions of an API';
-        $this->arguments = [
-            ['api', 'name of the api', 'Aryeo'],
+        $this->parameters = [
+            ['s_dir', 'spec directory', '/Users/john/Desktop/reference/Aryeo'],
+            ['s_prefix', 'spec prefix', 'Aryeo (e.g. Aryeo.2021-06-17.json)'],
+            ['m_dir', 'models directory', '/Users/john/Desktop/models'],
             ['old_version', 'spec version that comes before new_version', '2021-06-17'],
             ['new_version', 'spec version that comes after old_version', '2021-07-09'],
-        ];
-        $this->parameters = [
-            ['pdir', 'project directory', '/Users/jdoe/Dev/aryeo'],
         ];
     }
 
@@ -27,17 +26,18 @@ class DiffController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $api = $args[0];
-            $old_version = $args[1];
-            $new_version = $args[2];
-            $pdir = $this->getParam('pdir');
-            $this->compareVersions($pdir, $api, $old_version, $new_version);
+            $spec_dir = $this->getParam('s_dir');
+            $spec_prefix = $this->getParam('s_prefix');
+            $models_dir = $this->getParam('m_dir');
+            $old_version = $this->getParam('old_version');
+            $new_version = $this->getParam('new_version');
+            $this->compareVersions($spec_dir, $spec_prefix, $models_dir, $old_version, $new_version);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function compareVersions($pdir, $api, $old_version, $new_version)
+    public function compareVersions($spec_dir, $spec_prefix, $models_dir, $old_version, $new_version)
     {
         if (version_compare($old_version, $new_version) >= 0) {
             $this->getPrinter()->out('error: cannot old_version must be less than new_version', 'error');
@@ -45,54 +45,55 @@ class DiffController extends PapiController
 
             return;
         } else {
-            $this->compareRoutes($pdir, $api, $old_version, $new_version);
-            $this->compareModels($pdir, $api, $old_version, $new_version);
+            $this->compareRoutes($spec_dir, $spec_prefix, $old_version, $new_version);
+            $this->compareModels($spec_dir, $models_dir, $old_version, $new_version);
         }
     }
 
-    public function compareRoutes($pdir, $api, $old_version, $new_version)
+    public function compareRoutes($spec_dir, $spec_prefix, $old_version, $new_version)
     {
         // gather routes in specs less than or equal to $old_version
-        $older_versions = PapiMethods::versionsEqualToOrBelow($pdir, $api, $old_version);
-        $older_routes = $this->gatherRoutesForVersions($pdir, $api, $older_versions);
-
-        // gather routes in specs newer than $old_version
-        $newer_versions = PapiMethods::versionsAbove($pdir, $api, $old_version);
-        $newer_routes = $this->gatherRoutesForVersions($pdir, $api, $newer_versions);
-
+        $older_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $old_version);
+        $older_routes = $this->gatherRoutesForVersions($spec_dir, $spec_prefix, $older_versions);
+        
+        // gather routes in specs newer than $old_version, but less than $new_version
+        $newer_versions = PapiMethods::versionsBetween($spec_dir, $old_version, false, $new_version, true);
+        $newer_routes = $this->gatherRoutesForVersions($spec_dir, $spec_prefix, $newer_versions);
+        
         $this->showDiff('ROUTES', $older_routes, $newer_routes);
     }
 
-    public function gatherRoutesForVersions($pdir, $api, $versions)
+    public function gatherRoutesForVersions($spec_dir, $spec_name, $versions)
     {
         $routes = [];
         foreach ($versions as $version) {
-            $vroutes = PapiMethods::routes($pdir, $api, $version);
-            $routes = array_merge($vroutes, $routes);
+            $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_name . '.' . $version . '.json';
+            $v_routes = PapiMethods::routes($spec_file_path);
+            $routes = array_merge($v_routes, $routes);
         }
 
         return $routes;
     }
 
-    public function compareModels($pdir, $api, $old_version, $new_version)
+    public function compareModels($spec_dir, $models_dir, $old_version, $new_version)
     {
         // gather models in specs less than or equal to $old_version
-        $older_versions = PapiMethods::versionsEqualToOrBelow($pdir, $api, $old_version);
-        $older_models = $this->gatherModelsForVersions($pdir, $older_versions);
+        $older_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $old_version);
+        $older_models = $this->gatherModelsForVersions($models_dir, $older_versions);
 
-        // gather models in specs newer than $old_version
-        $newer_versions = PapiMethods::versionsAbove($pdir, $api, $old_version);
-        $newer_models = $this->gatherModelsForVersions($pdir, $newer_versions);
+        // gather models in specs newer than $old_version, but less than $new_version
+        $newer_versions = PapiMethods::versionsBetween($spec_dir, $old_version, false, $new_version, true);
+        $newer_models = $this->gatherModelsForVersions($models_dir, $newer_versions);
 
         $this->showDiff('MODELS', $older_models, $newer_models);
     }
 
-    public function gatherModelsForVersions($pdir, $versions)
+    public function gatherModelsForVersions($models_dir, $versions)
     {
         $models = [];
         foreach ($versions as $version) {
-            $vmodels = PapiMethods::models($pdir, $version);
-            $models = array_merge($vmodels, $models);
+            $v_models = PapiMethods::jsonFilesInDir($models_dir . DIRECTORY_SEPARATOR . $version);
+            $models = array_merge($v_models, $models);
         }
 
         return $models;

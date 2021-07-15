@@ -14,8 +14,8 @@ class SafeController extends PapiController
         parent::boot($app);
         $this->description = 'check if changes to an api are safe';
         $this->parameters = [
-            ['lspec', 'path to last spec reference', '/tmp/Aryeo.LAST.json'],
-            ['cspec', 'path to current spec reference', '/tmp/Aryeo.CURRENT.json'],
+            ['l_spec', 'path to last spec reference', '/Users/john/Desktop/Aryeo.LAST.json'],
+            ['c_spec', 'path to current spec reference', '/Users/john/Desktop/Aryeo.CURRENT.json'],
         ];
     }
 
@@ -24,9 +24,9 @@ class SafeController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $cspec = $this->getParam('cspec');
-            $lspec = $this->getParam('lspec');
-            $this->checkSpecs($cspec, $lspec);
+            $last_spec = $this->getParam('l_spec');
+            $current_spec = $this->getParam('c_spec');
+            $this->checkSpecs($current_spec, $last_spec);
         } else {
             $this->printCommandHelp();
         }
@@ -34,9 +34,9 @@ class SafeController extends PapiController
 
     public function checkSpecs($current_spec_path, $last_spec_path)
     {
-        $ljson = PapiMethods::readJsonFromFile($last_spec_path);
+        $last_json = PapiMethods::readJsonFromFile($last_spec_path);
 
-        if ($ljson === false) {
+        if ($last_json === false) {
             $this->safetyHeader();
             $this->getPrinter()->out('👎 FAIL: Unable to open last spec.', 'error');
             $this->getPrinter()->newline();
@@ -44,9 +44,9 @@ class SafeController extends PapiController
             exit(-1);
         }
 
-        $cjson = PapiMethods::readJsonFromFile($current_spec_path);
+        $current_json = PapiMethods::readJsonFromFile($current_spec_path);
 
-        if ($ljson === false) {
+        if ($last_json === false) {
             $this->safetyHeader();
             $this->getPrinter()->out('👎 FAIL: Unable to open current spec.', 'error');
             $this->getPrinter()->newline();
@@ -54,10 +54,10 @@ class SafeController extends PapiController
             exit(-1);
         }
 
-        $ljson_version = $ljson['info']['version'];
-        $cjson_version = $cjson['info']['version'];
+        $last_json_version = $last_json['info']['version'];
+        $current_json_version = $current_json['info']['version'];
 
-        if ($ljson_version !== $cjson_version) {
+        if ($last_json_version !== $current_json_version) {
             $this->safetyHeader();
             $this->getPrinter()->rawOutput('Specs being compared are not the same version. Exiting quietly.', 'error');
             $this->getPrinter()->newline();
@@ -68,29 +68,29 @@ class SafeController extends PapiController
         $section_results = [];
 
         // additions...
-        $section_results[] = $this->checkRouteSecurityAdditions($ljson, $cjson);
+        $section_results[] = $this->checkRouteSecurityAdditions($last_json, $current_json);
 
         // removals...
-        $section_results[] = $this->checkResponsePropertyRemovals($ljson, $cjson);
-        $section_results[] = $this->checkRequestBodyPropertyRemovals($ljson, $cjson);
-        $section_results[] = $this->checkRouteMethodDirectRemovals($ljson, $cjson);
-        $section_results[] = $this->checkRouteMethodDeprecatedRemovals($ljson, $cjson);
-        $section_results[] = $this->checkRouteMethodInternalRemovals($ljson, $cjson);
-        $section_results[] = $this->checkResponseRemovals($ljson, $cjson);
-        $section_results[] = $this->checkQueryParamRemovals($ljson, $cjson);
-        $section_results[] = $this->checkHeaderRemovals($ljson, $cjson);
+        $section_results[] = $this->checkResponsePropertyRemovals($last_json, $current_json);
+        $section_results[] = $this->checkRequestBodyPropertyRemovals($last_json, $current_json);
+        $section_results[] = $this->checkRouteMethodDirectRemovals($last_json, $current_json);
+        $section_results[] = $this->checkRouteMethodDeprecatedRemovals($last_json, $current_json);
+        $section_results[] = $this->checkRouteMethodInternalRemovals($last_json, $current_json);
+        $section_results[] = $this->checkResponseRemovals($last_json, $current_json);
+        $section_results[] = $this->checkQueryParamRemovals($last_json, $current_json);
+        $section_results[] = $this->checkHeaderRemovals($last_json, $current_json);
 
         // type changes...
-        $section_results[] = $this->checkResponsePropertyTypeChanged($ljson, $cjson);
-        $section_results[] = $this->checkRequestBodyPropertyTypeChanged($ljson, $cjson);
-        $section_results[] = $this->checkQueryParameterTypeChanged($ljson, $cjson);
-        $section_results[] = $this->checkHeaderTypeChanged($ljson, $cjson);
-        $section_results[] = $this->checkEnumsChanged($ljson, $cjson);
+        $section_results[] = $this->checkResponsePropertyTypeChanged($last_json, $current_json);
+        $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_json, $current_json);
+        $section_results[] = $this->checkQueryParameterTypeChanged($last_json, $current_json);
+        $section_results[] = $this->checkHeaderTypeChanged($last_json, $current_json);
+        $section_results[] = $this->checkEnumsChanged($last_json, $current_json);
 
         // optionality...
-        $section_results[] = $this->checkRequestBodyPropertyNowRequired($ljson, $cjson);
-        $section_results[] = $this->checkQueryParameterNowRequired($ljson, $cjson);
-        $section_results[] = $this->checkHeaderNowRequired($ljson, $cjson);
+        $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_json, $current_json);
+        $section_results[] = $this->checkQueryParameterNowRequired($last_json, $current_json);
+        $section_results[] = $this->checkHeaderNowRequired($last_json, $current_json);
 
         // display results and exit accordingly...
         if ($this->displaySectionResultsWithErrors($section_results)) {
@@ -110,26 +110,26 @@ class SafeController extends PapiController
      * Additions
      */
 
-    public function checkRouteSecurityAdditions($ljson, $cjson)
+    public function checkRouteSecurityAdditions($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute = PapiMethods::getNestedValue($ljson, $route_key);
-            $croute = PapiMethods::getNestedValue($cjson, $route_key);
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route = PapiMethods::getNestedValue($last_json, $route_key);
+            $current_route = PapiMethods::getNestedValue($current_json, $route_key);
 
             // is the security the same?
-            $lroute_security = [];
-            if (isset($lroute['security'])) {
-                $lroute_security = $lroute['security'];
+            $last_route_security = [];
+            if (isset($last_route['security'])) {
+                $last_route_security = $last_route['security'];
             }
-            $croute_security = [];
-            if (isset($croute['security'])) {
-                $croute_security = $croute['security'];
+            $current_route_security = [];
+            if (isset($current_route['security'])) {
+                $current_route_security = $current_route['security'];
             }
 
-            $diff = array_diff_assoc($croute_security, $lroute_security);
+            $diff = array_diff_assoc($current_route_security, $last_route_security);
 
             if (count($diff) > 0) {
                 $new_schemes = array_filter(array_values(PapiMethods::arrayKeysRecursive($diff)), 'is_string');
@@ -148,25 +148,25 @@ class SafeController extends PapiController
      * Removals
      */
 
-    public function checkResponsePropertyRemovals($ljson, $cjson)
+    public function checkResponsePropertyRemovals($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute = PapiMethods::getNestedValue($ljson, $route_key);
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route = PapiMethods::getNestedValue($last_json, $route_key);
 
             // for each response...
-            if (isset($lroute['responses'])) {
-                foreach ($lroute['responses'] as $status_code => $lroute_response) {
-                    $croute_response = PapiMethods::getNestedValue($cjson, $route_key.'[responses]'.'['.$status_code.']');
+            if (isset($last_route['responses'])) {
+                foreach ($last_route['responses'] as $status_code => $last_route_response) {
+                    $current_route_response = PapiMethods::getNestedValue($current_json, $route_key.'[responses]'.'['.$status_code.']');
 
                     // does the current spec have a response for this status code?
-                    if ($croute_response) {
+                    if ($current_route_response) {
                         // are the properties the same?
                         $error = $this->schemaDiff(
-                            $lroute_response['content']['application/json']['schema'],
-                            $croute_response['content']['application/json']['schema'],
+                            $last_route_response['content']['application/json']['schema'],
+                            $current_route_response['content']['application/json']['schema'],
                             PapiMethods::formatRouteKey($route_key),
                             $status_code
                         );
@@ -182,22 +182,22 @@ class SafeController extends PapiController
         return new SectionResults('Response Property Removals', $errors);
     }
 
-    public function checkRequestBodyPropertyRemovals($ljson, $cjson)
+    public function checkRequestBodyPropertyRemovals($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute_request_body = PapiMethods::getNestedValue($ljson, $route_key.'[requestBody]');
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route_request_body = PapiMethods::getNestedValue($last_json, $route_key.'[requestBody]');
 
             // was there a request body in last spec?
-            if ($lroute_request_body) {
-                $croute_request_body = PapiMethods::getNestedValue($cjson, $route_key.'[requestBody]');
+            if ($last_route_request_body) {
+                $current_route_request_body = PapiMethods::getNestedValue($current_json, $route_key.'[requestBody]');
 
                 // if so, has it changed?
                 $error = $this->schemaDiff(
-                    $lroute_request_body['content']['application/json']['schema'],
-                    $croute_request_body['content']['application/json']['schema'],
+                    $last_route_request_body['content']['application/json']['schema'],
+                    $current_route_request_body['content']['application/json']['schema'],
                     PapiMethods::formatRouteKey($route_key),
                     'Request Body'
                 );
@@ -211,14 +211,14 @@ class SafeController extends PapiController
         return new SectionResults('Request Body Property Removals', $errors);
     }
 
-    public function checkRouteMethodDirectRemovals($ljson, $cjson)
+    public function checkRouteMethodDirectRemovals($last_json, $current_json)
     {
         $errors = [];
 
-        $lroute_keys = array_keys(PapiMethods::routesFromJson($ljson, true));
-        $croute_keys = array_keys(PapiMethods::routesFromJson($cjson, true));
+        $last_route_keys = array_keys(PapiMethods::routesFromJson($last_json, true));
+        $current_route_keys = array_keys(PapiMethods::routesFromJson($current_json, true));
 
-        $diff = array_diff($lroute_keys, $croute_keys);
+        $diff = array_diff($last_route_keys, $current_route_keys);
 
         if (count($diff) > 0) {
             foreach ($diff as $route_key) {
@@ -229,33 +229,33 @@ class SafeController extends PapiController
         return new SectionResults('Route Removals', $errors);
     }
 
-    public function checkRouteMethodDeprecatedRemovals($ljson, $cjson)
+    public function checkRouteMethodDeprecatedRemovals($last_json, $current_json)
     {
-        $errors = $this->routeDiff($ljson, $cjson, 'deprecated', 'deprecated');
+        $errors = $this->routeDiff($last_json, $current_json, 'deprecated', 'deprecated');
 
         return new SectionResults('Routes Marked Deprecated', $errors);
     }
 
-    public function checkRouteMethodInternalRemovals($ljson, $cjson)
+    public function checkRouteMethodInternalRemovals($last_json, $current_json)
     {
-        $errors = $this->routeDiff($ljson, $cjson, 'x-internal', 'internal');
+        $errors = $this->routeDiff($last_json, $current_json, 'x-internal', 'internal');
 
         return new SectionResults('Routes Marked Internal', $errors);
     }
 
-    public function checkResponseRemovals($ljson, $cjson)
+    public function checkResponseRemovals($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute_responses = PapiMethods::getNestedValue($ljson, $route_key.'[responses]');
-            $lroute_codes = array_keys($lroute_responses);
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route_responses = PapiMethods::getNestedValue($last_json, $route_key.'[responses]');
+            $last_route_codes = array_keys($last_route_responses);
 
-            $croute_responses = PapiMethods::getNestedValue($cjson, $route_key.'[responses]');
-            $croute_codes = array_keys($croute_responses);
+            $current_route_responses = PapiMethods::getNestedValue($current_json, $route_key.'[responses]');
+            $current_route_codes = array_keys($current_route_responses);
 
-            $diff = array_diff($lroute_codes, $croute_codes);
+            $diff = array_diff($last_route_codes, $current_route_codes);
 
             if (count($diff) > 0) {
                 foreach ($diff as $status_code) {
@@ -271,14 +271,14 @@ class SafeController extends PapiController
         return new SectionResults('Response Removals', $errors);
     }
 
-    public function checkQueryParamRemovals($ljson, $cjson)
+    public function checkQueryParamRemovals($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
             // do the query parameters match?
-            $error = $this->routeParametersDiff($ljson, $cjson, $route_key, 'query');
+            $error = $this->routeParametersDiff($last_json, $current_json, $route_key, 'query');
             if ($error) {
                 $errors[] = $error;
             }
@@ -287,14 +287,14 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Removals', $errors);
     }
 
-    public function checkHeaderRemovals($ljson, $cjson)
+    public function checkHeaderRemovals($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
             // do the headers match?
-            $error = $this->routeParametersDiff($ljson, $cjson, $route_key, 'header');
+            $error = $this->routeParametersDiff($last_json, $current_json, $route_key, 'header');
             if ($error) {
                 $errors[] = $error;
             }
@@ -307,24 +307,24 @@ class SafeController extends PapiController
      * Type Changes
      */
 
-    public function checkResponsePropertyTypeChanged($ljson, $cjson)
+    public function checkResponsePropertyTypeChanged($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute = PapiMethods::getNestedValue($ljson, $route_key);
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route = PapiMethods::getNestedValue($last_json, $route_key);
 
             // for each response...
-            foreach ($lroute['responses'] as $status_code => $lroute_response) {
-                $croute_response = PapiMethods::getNestedValue($cjson, $route_key.'[responses]'.'['.$status_code.']');
+            foreach ($last_route['responses'] as $status_code => $last_route_response) {
+                $current_route_response = PapiMethods::getNestedValue($current_json, $route_key.'[responses]'.'['.$status_code.']');
 
                 // does the current spec have a response for this status code?
-                if ($croute_response) {
+                if ($current_route_response) {
                     // are the types the same?
-                    $diff_errors = $this->schemaPropetryTypeDiff(
-                        $lroute_response['content']['application/json']['schema'],
-                        $croute_response['content']['application/json']['schema'],
+                    $diff_errors = $this->schemaPropertyTypeDiff(
+                        $last_route_response['content']['application/json']['schema'],
+                        $current_route_response['content']['application/json']['schema'],
                         PapiMethods::formatRouteKey($route_key),
                         $status_code
                     );
@@ -337,19 +337,19 @@ class SafeController extends PapiController
         return new SectionResults('Response Property Type Changes', $errors);
     }
 
-    public function checkRequestBodyPropertyTypeChanged($ljson, $cjson)
+    public function checkRequestBodyPropertyTypeChanged($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute = PapiMethods::getNestedValue($ljson, $route_key);
-            $croute = PapiMethods::getNestedValue($cjson, $route_key);
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route = PapiMethods::getNestedValue($last_json, $route_key);
+            $current_route = PapiMethods::getNestedValue($current_json, $route_key);
 
             // are the request body property types the same?
-            $diff_errors = $this->schemaPropetryTypeDiff(
-                $lroute['requestBody']['content']['application/json']['schema'],
-                $croute['requestBody']['content']['application/json']['schema'],
+            $diff_errors = $this->schemaPropertyTypeDiff(
+                $last_route['requestBody']['content']['application/json']['schema'],
+                $current_route['requestBody']['content']['application/json']['schema'],
                 PapiMethods::formatRouteKey($route_key),
                 'Request Body'
             );
@@ -360,16 +360,16 @@ class SafeController extends PapiController
         return new SectionResults('Request Body Property Type Changes', $errors);
     }
 
-    public function checkQueryParameterTypeChanged($ljson, $cjson)
+    public function checkQueryParameterTypeChanged($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
             // are the query parameter types the same?
             $diff_errors = $this->routeParametersTypeDiff(
-                $ljson,
-                $cjson,
+                $last_json,
+                $current_json,
                 $route_key,
                 'query',
                 '[schema][type]'
@@ -381,16 +381,16 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Type Changes', $errors);
     }
 
-    public function checkHeaderTypeChanged($ljson, $cjson)
+    public function checkHeaderTypeChanged($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
             // are the header types the same?
             $diff_errors = $this->routeParametersTypeDiff(
-                $ljson,
-                $cjson,
+                $last_json,
+                $current_json,
                 $route_key,
                 'header',
                 '[schema][type]'
@@ -402,31 +402,31 @@ class SafeController extends PapiController
         return new SectionResults('Header Type Changes', $errors);
     }
 
-    public function checkEnumsChanged($ljson, $cjson)
+    public function checkEnumsChanged($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute = PapiMethods::getNestedValue($ljson, $route_key);
-            $croute = PapiMethods::getNestedValue($cjson, $route_key);
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route = PapiMethods::getNestedValue($last_json, $route_key);
+            $current_route = PapiMethods::getNestedValue($current_json, $route_key);
 
             // for each response...
-            if (isset($lroute['responses'])) {
-                foreach ($lroute['responses'] as $status_code => $lroute_response) {
-                    $croute_response = PapiMethods::getNestedValue($cjson, $route_key.'[responses]'.'['.$status_code.']');
+            if (isset($last_route['responses'])) {
+                foreach ($last_route['responses'] as $status_code => $last_route_response) {
+                    $current_route_response = PapiMethods::getNestedValue($current_json, $route_key.'[responses]'.'['.$status_code.']');
 
                     // for each enum in the response...
-                    foreach (PapiMethods::arrayFindRecursive($lroute_response, 'enum') as $result) {
+                    foreach (PapiMethods::arrayFindRecursive($last_route_response, 'enum') as $result) {
                         $enum_path = $result['path'];
                         $enum_value = $result['value'];
 
-                        // does cjson also have this enum?
-                        if ($croute_response) {
-                            $cenum_value = PapiMethods::getNestedValue($croute_response, $enum_path);
-                            if ($cenum_value) {
+                        // does current_json also have this enum?
+                        if ($current_route_response) {
+                            $current_enum_value = PapiMethods::getNestedValue($current_route_response, $enum_path);
+                            if ($current_enum_value) {
                                 // has the enum changed?
-                                $diff = array_diff($enum_value, $cenum_value);
+                                $diff = array_diff($enum_value, $current_enum_value);
                                 if (count($diff) > 0) {
                                     $errors[] = sprintf(
                                         '%s (%s): Enum mismatch at `%s`.',
@@ -442,24 +442,24 @@ class SafeController extends PapiController
             }
 
             // for each route parameter...
-            if (isset($lroute['parameters'])) {
-                foreach (PapiMethods::arrayFindRecursive($lroute['parameters'], 'enum') as $result) {
+            if (isset($last_route['parameters'])) {
+                foreach (PapiMethods::arrayFindRecursive($last_route['parameters'], 'enum') as $result) {
                     $enum_path = $result['path'];
 
                     $trimmed_key = substr($enum_path, 1, -1);
                     $parts = explode('][', $trimmed_key);
                     $parameter_index = $parts[0];
-                    $parameter_name = $lroute['parameters'][$parameter_index]['name'];
-                    $parameter_in = $lroute['parameters'][$parameter_index]['in'];
+                    $parameter_name = $last_route['parameters'][$parameter_index]['name'];
+                    $parameter_in = $last_route['parameters'][$parameter_index]['in'];
 
                     $enum_value = $result['value'];
 
-                    // does cjson also have this enum?
-                    if ($croute) {
-                        $cenum_value = PapiMethods::getNestedValue($croute['parameters'], $enum_path);
-                        if ($cenum_value) {
+                    // does current_json also have this enum?
+                    if ($current_route) {
+                        $current_enum_value = PapiMethods::getNestedValue($current_route['parameters'], $enum_path);
+                        if ($current_enum_value) {
                             // has the enum changed?
-                            $diff = array_diff($enum_value, $cenum_value);
+                            $diff = array_diff($enum_value, $current_enum_value);
                             if (count($diff) > 0) {
                                 $errors[] = sprintf(
                                     '%s (%s): Enum mismatch for %s.',
@@ -481,18 +481,18 @@ class SafeController extends PapiController
      * Optionality
      */
 
-    public function checkRequestBodyPropertyNowRequired($ljson, $cjson)
+    public function checkRequestBodyPropertyNowRequired($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
-            $lroute = PapiMethods::getNestedValue($ljson, $route_key);
-            $croute = PapiMethods::getNestedValue($cjson, $route_key);
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
+            $last_route = PapiMethods::getNestedValue($last_json, $route_key);
+            $current_route = PapiMethods::getNestedValue($current_json, $route_key);
 
-            $diff_errors = $this->schemaPropetryRequiredDiff(
-                $lroute['requestBody']['content']['application/json']['schema'],
-                $croute['requestBody']['content']['application/json']['schema'],
+            $diff_errors = $this->schemaPropertyRequiredDiff(
+                $last_route['requestBody']['content']['application/json']['schema'],
+                $current_route['requestBody']['content']['application/json']['schema'],
                 PapiMethods::formatRouteKey($route_key),
             );
 
@@ -502,15 +502,15 @@ class SafeController extends PapiController
         return new SectionResults('Request Body Property Optionality', $errors);
     }
 
-    public function checkQueryParameterNowRequired($ljson, $cjson)
+    public function checkQueryParameterNowRequired($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
             $diff_errors = $this->routeParametersRequiredDiff(
-                $ljson,
-                $cjson,
+                $last_json,
+                $current_json,
                 $route_key,
                 'query',
                 '[required]'
@@ -522,15 +522,15 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Optionality', $errors);
     }
 
-    public function checkHeaderNowRequired($ljson, $cjson)
+    public function checkHeaderNowRequired($last_json, $current_json)
     {
         $errors = [];
 
         // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($ljson, $cjson) as $route_key) {
+        foreach (PapiMethods::matchingRouteKeys($last_json, $current_json) as $route_key) {
             $diff_errors = $this->routeParametersRequiredDiff(
-                $ljson,
-                $cjson,
+                $last_json,
+                $current_json,
                 $route_key,
                 'header',
                 '[required]'
@@ -624,7 +624,7 @@ class SafeController extends PapiController
         }
     }
 
-    public function schemaPropetryTypeDiff($a_schema, $b_schema, $subject, $location)
+    public function schemaPropertyTypeDiff($a_schema, $b_schema, $subject, $location)
     {
         $errors = [];
 
@@ -653,7 +653,7 @@ class SafeController extends PapiController
         return $errors;
     }
 
-    public function schemaPropetryRequiredDiff($a_schema, $b_schema, $subject)
+    public function schemaPropertyRequiredDiff($a_schema, $b_schema, $subject)
     {
         $errors = [];
 

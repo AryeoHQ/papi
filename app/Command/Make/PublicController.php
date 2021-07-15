@@ -13,9 +13,9 @@ class PublicController extends PapiController
         parent::boot($app);
         $this->description = 'make public api spec from a de-referenced spec';
         $this->parameters = [
-            ['spath', 'path to spec file', '/Users/jdoe/Dev/aryeo/spec.json'],
-            ['ospath', 'write path for public api spec', '/Users/jdoe/Dev/aryeo/spec-public.json'],
-            ['opath', 'path to overrides file', '/tmp/overrides.json'],
+            ['s_path', 'path to spec file', '/Users/john/Desktop/reference/out/Aryeo.MERGED.json'],
+            ['o_path', 'path to overrides file', '/Users/john/Desktop/overrides.json'],
+            ['out_path', 'write path for public api spec', '/Users/john/Desktop/reference/out/Aryeo.PUBLIC.json'],
         ];
     }
 
@@ -24,30 +24,30 @@ class PublicController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $spath = $this->getParam('spath');
-            $ospath = $this->getParam('ospath');
-            $overrides_path = $this->getParam('opath');
-            $this->preparePublicSpec($spath, $ospath, $overrides_path);
+            $spec_path = $this->getParam('s_path');
+            $overrides_path = $this->getParam('o_path');
+            $out_path = $this->getParam('out_path');
+            $this->preparePublicSpec($spec_path, $out_path, $overrides_path);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function preparePublicSpec($spath, $ospath, $overrides_path)
+    public function preparePublicSpec($spec_path, $out_path, $overrides_path)
     {
-        if (!$spath) {
-            $this->getPrinter()->out('error: cannot find ' . $spath, 'error');
+        if (!$spec_path) {
+            $this->getPrinter()->out('error: cannot find ' . $spec_path, 'error');
             $this->getPrinter()->newline();
 
             return;
         } else {
-            $json = PapiMethods::readJsonFromFile($spath);
+            $json = PapiMethods::readJsonFromFile($spec_path);
             $json = $this->removeInternalPaths($json);
             $json = $this->removeUnreferencedTags($json);
             $json = $this->makePathMethodAdjustments($json);
             $json = $this->applyPublicOverrides($json, $overrides_path);
 
-            PapiMethods::writeJsonToFile($json, $ospath);
+            PapiMethods::writeJsonToFile($json, $out_path);
         }
     }
 

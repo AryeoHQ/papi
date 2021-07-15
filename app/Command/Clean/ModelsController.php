@@ -13,7 +13,7 @@ class ModelsController extends PapiController
         parent::boot($app);
         $this->description = 'clean models';
         $this->parameters = [
-            ['mdir', 'models directory', '/Users/jdoe/Desktop/spec/models'],
+            ['models_dir', 'models directory', '/Users/john/Desktop/spec/models'],
         ];
         $this->notes = [
             'Cleaning models applies known defaults to models that',
@@ -27,19 +27,19 @@ class ModelsController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $mdir = $this->getParam('mdir');
-            $this->cleanModels($mdir);
+            $models_dir = $this->getParam('models_dir');
+            $this->cleanModels($models_dir);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function cleanModels($mdir)
+    public function cleanModels($models_dir)
     {
-        foreach (PapiMethods::jsonFilesInDir($mdir) as $model_file_name) {
-            $mpath = $mdir . '/' . $model_file_name;
-            $mjson = $this->cleanModel($mpath);
-            PapiMethods::writeJsonToFile($mjson, $mpath);
+        foreach (PapiMethods::jsonFilesInDir($models_dir) as $model_file_name) {
+            $model_path = $models_dir . DIRECTORY_SEPARATOR . $model_file_name;
+            $model_json = $this->cleanModel($model_path);
+            PapiMethods::writeJsonToFile($model_json, $model_path);
         }
     }
 

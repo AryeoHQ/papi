@@ -8,47 +8,45 @@ use RecursiveIteratorIterator;
 class PapiMethods
 {
     /*
-     * Directories
-     */
-
-    public static function specRootDirectory($pdir)
-    {
-        $normalized_pdir = '/'.ltrim($pdir, '/');
-
-        return $normalized_pdir.'/spec';
-    }
-
-    public static function specTestDirectory($pdir)
-    {
-        $normalized_pdir = '/'.ltrim($pdir, '/');
-
-        return $normalized_pdir.'/tests/Spec';
-    }
-
-    public static function modelsDirectory($pdir)
-    {
-        return PapiMethods::specRootDirectory($pdir).'/models';
-    }
-
-    public static function specsDirectory($pdir, $api)
-    {
-        return PapiMethods::specRootDirectory($pdir).'/reference'.'/'.$api;
-    }
-
-    public static function outDirectory($pdir, $api)
-    {
-        return PapiMethods::specRootDirectory($pdir).'/out'.'/'.$api;
-    }
-
-    /*
      * Files
      */
 
+    public static function isValidFile($path)
+    {
+        return !(empty($path) || !file_exists($path) || !is_file($path));
+    }
+
+    public static function specTestDirectory($project_dir)
+    {
+        $normalized_project_dir = '/'.ltrim($project_dir, '/');
+
+        return $normalized_project_dir.'/tests/Spec';
+    }
+
+    public static function scandirRecursively($dir)
+    {
+        $result = [];
+        foreach (scandir($dir) as $filename) {
+            if ($filename[0] === '.') {
+                continue;
+            }
+            $filePath = $dir . DIRECTORY_SEPARATOR . $filename;
+            if (is_dir($filePath)) {
+                foreach (PapiMethods::scandirRecursively($filePath) as $childFilename) {
+                    $result[] = $filename . DIRECTORY_SEPARATOR . $childFilename;
+                }
+            } else {
+                $result[] = $filename;
+            }
+        }
+        return $result;
+    }
+
     public static function jsonFilesInDir($dir)
     {
-        if (file_exists($dir)) {
-            $items = scandir($dir);
-
+        if (file_exists($dir) && is_dir($dir)) {
+            $items = PapiMethods::scandirRecursively($dir);
+            
             if ($items) {
                 return array_filter($items, function ($item) {
                     if (is_dir($item) || pathinfo($item)['extension'] !== 'json') {
@@ -63,39 +61,6 @@ class PapiMethods
         return [];
     }
 
-    public static function modelFiles($pdir, $version)
-    {
-        $versioned_models_dir = PapiMethods::modelsDirectory($pdir).'/'.$version;
-
-        return PapiMethods::jsonFilesInDir($versioned_models_dir);
-    }
-
-    public static function modelFilePath($pdir, $model_file_name, $version)
-    {
-        return PapiMethods::modelsDirectory($pdir).'/'.$version.'/'.$model_file_name;
-    }
-
-    public static function specFiles($pdir, $api)
-    {
-        $versioned_spec_dir = PapiMethods::specsDirectory($pdir, $api);
-
-        return PapiMethods::jsonFilesInDir($versioned_spec_dir);
-    }
-
-    public static function specFile($pdir, $api, $version)
-    {
-        $spec_file = PapiMethods::specsDirectory($pdir, $api).'/'.$api.'.'.$version.'.json';
-
-        return (file_exists($spec_file)) ? $spec_file : '';
-    }
-
-    public static function derefSpecFile($pdir, $api, $version)
-    {
-        $spec_file = PapiMethods::outDirectory($pdir, $api).'/'.$api.'-deref.'.$version.'.json';
-
-        return (file_exists($spec_file)) ? $spec_file : '';
-    }
-
     public static function specNameAndVersion($spec_file)
     {
         $file_name = ''.basename($spec_file, '.json');
@@ -107,7 +72,7 @@ class PapiMethods
     }
 
     /*
-     * I/O
+     * Reading and Writing
      */
 
     public static function readJsonFromFile($file_path)
@@ -137,7 +102,7 @@ class PapiMethods
         fclose($file);
     }
 
-    public static function writeFile($contents, $file_path)
+    public static function writeTextToFile($text, $file_path)
     {
         // create write directory if DNE
         if (!file_exists(dirname($file_path))) {
@@ -145,7 +110,7 @@ class PapiMethods
         }
 
         $file = fopen($file_path, 'w') or exit('Unable to open file!');
-        fwrite($file, $contents);
+        fwrite($file, $text);
         fclose($file);
     }
 
@@ -229,36 +194,33 @@ class PapiMethods
     {
         $path_segments = PapiMethods::specPathToSegments($path);
         $class_name = join('', $path_segments).'Test';
-        $class_namespace = 'Tests\Spec\\'.ucfirst($spec_name).'\v'.str_replace('-', '_', $spec_version);
+        $class_namespace = 'Tests\Spec\\'.ucfirst($spec_name).'\\'.str_replace('-', '_', $spec_version);
 
         return $class_namespace.'\\'.$class_name;
     }
 
-    public static function models($pdir, $version)
+    public static function models($models_dir)
     {
         $models = [];
 
-        foreach (PapiMethods::modelFiles($pdir, $version) as $model_file_name) {
-            $mpath = PapiMethods::modelFilePath($pdir, $model_file_name, $version);
+        foreach (PapiMethods::jsonFilesInDir($models_dir) as $model_file_name) {
+            $model_path = $models_dir . DIRECTORY_SEPARATOR . $model_file_name;
+            $models_dir = basename(dirname($model_path));
+            $model_name = basename($model_path, '.json');
 
-            $mdir = basename(dirname($mpath));
-            $mname = basename($mpath, '.json');
+            $model_key = $models_dir.DIRECTORY_SEPARATOR.$model_name;
 
-            $mkey = $mdir.'/'.$mname;
-
-            if (!isset($models[$mkey])) {
-                $models[$mkey] = $mkey;
+            if (!isset($models[$model_key])) {
+                $models[$model_key] = $model_key;
             }
         }
 
         return $models;
     }
 
-    public static function routes($pdir, $api, $version)
+    public static function routes($spec_file_path)
     {
-        $spec_file_path = PapiMethods::specFile($pdir, $api, $version);
         $json = PapiMethods::readJsonFromFile($spec_file_path);
-
         return PapiMethods::routesFromJson($json);
     }
 
@@ -317,7 +279,7 @@ class PapiMethods
         $reference = &$array;
 
         foreach ($key_path as $key) {
-            if (!array_key_exists($key, $reference)) {
+            if (!isset($reference[$key])) {
                 $reference[$key] = [];
             }
             $reference = &$reference[$key];
@@ -347,9 +309,9 @@ class PapiMethods
         return array_map('ucfirst', preg_replace('/[\{\}]/', '', preg_split('/[\/\-]/', $path_only)));
     }
 
-    public static function versionsEqualToOrBelow($pdir, $api, $version)
+    public static function versionsEqualToOrBelow($spec_dir, $version)
     {
-        $spec_files = PapiMethods::specFiles($pdir, $api, $version);
+        $spec_files = PapiMethods::jsonFilesInDir($spec_dir);
 
         $spec_versions = array_map(function ($a) {
             $base_name = basename($a, '.json');
@@ -364,18 +326,26 @@ class PapiMethods
         return array_reverse($filtered_versions);
     }
 
-    public static function versionsAbove($pdir, $api, $version)
+    public static function versionsBetween($spec_dir, $version_floor, $include_floor, $version_ceiling, $include_ceiling)
     {
-        $spec_files = PapiMethods::specFiles($pdir, $api, $version);
-
+        $spec_files = PapiMethods::jsonFilesInDir($spec_dir);
+        
         $spec_versions = array_map(function ($a) {
             $base_name = basename($a, '.json');
 
             return substr($base_name, strpos($base_name, '.') + 1);
         }, $spec_files);
 
-        $filtered_versions = array_filter($spec_versions, function ($a) use ($version) {
-            return version_compare($a, $version) > 0;
+        $filtered_versions = array_filter($spec_versions, function ($a) use ($version_floor, $include_floor, $version_ceiling, $include_ceiling) {
+            if ($include_floor && $include_ceiling) {
+                return version_compare($a, $version_floor) >= 0 && version_compare($a, $version_ceiling) <= 0;
+            } elseif ($include_floor && !$include_ceiling) {
+                return version_compare($a, $version_floor) >= 0 && version_compare($a, $version_ceiling) < 0;
+            } elseif ($include_ceiling && !$include_floor) {
+                return version_compare($a, $version_floor) > 0 && version_compare($a, $version_ceiling) <= 0;
+            } else {
+                return version_compare($a, $version_floor) > 0 && version_compare($a, $version_ceiling) < 0;
+            }
         });
 
         return $filtered_versions;

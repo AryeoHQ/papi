@@ -35,7 +35,7 @@ class PapiController extends CommandController
         $this->printDescription();
         $this->printUsage();
         $this->printCommands();
-        $this->printSubcommandHelp();
+        $this->printSubCommandHelp();
     }
 
     public function printCommandHelp()
@@ -131,7 +131,7 @@ class PapiController extends CommandController
         }
     }
 
-    public function printSubcommandHelp()
+    public function printSubCommandHelp()
     {
         $command = $this->input->command;
         $sub_commands = $this->command_map[$this->input->command];

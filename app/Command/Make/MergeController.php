@@ -12,12 +12,11 @@ class MergeController extends PapiController
     {
         parent::boot($app);
         $this->description = 'make a merged api spec by squashing versions together';
-        $this->arguments = [
-            ['api', 'name of the api', 'Aryeo'],
-            ['version', 'highest version to include in the merge', '2021-06-17'],
-        ];
         $this->parameters = [
-            ['pdir', 'project directory', '/Users/jdoe/Dev/aryeo'],
+            ['s_dir', 'spec directory', '/Users/john/Desktop/reference/Aryeo'],
+            ['s_prefix', 'spec prefix', 'Aryeo (e.g. Aryeo.2021-06-17.json)'],
+            ['version', 'highest version to include in the merge', '2021-06-17'],
+            ['out_path', 'write path for merged api spec', '/Users/john/Desktop/reference/out/Aryeo.MERGED.json'],
         ];
         $this->notes = [
             'When API versions are merged together, the most recent version of',
@@ -30,45 +29,52 @@ class MergeController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $api = $args[0];
-            $version = $args[1];
-            $pdir = $this->getParam('pdir');
-            $this->mergeVersions($pdir, $api, $version);
+            $spec_dir = $this->getParam('s_dir');
+            $spec_prefix = $this->getParam('s_prefix');
+            $version = $this->getParam('version');
+            $out_path = $this->getParam('out_path');
+            $this->mergeVersions($spec_dir, $spec_prefix, $version, $out_path);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function mergeVersions($pdir, $api, $version)
+    public function mergeVersions($spec_dir, $spec_prefix, $version, $out_path)
     {
-        $computed_properties = [];
-        $merge_versions = PapiMethods::versionsEqualToOrBelow($pdir, $api, $version);
+        $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.json';
+        if (!PapiMethods::isValidFile($version_file_path)) {
+            $this->getPrinter()->out('👎 FAIL: Unable to find spec file for highest version.', 'error');
+            $this->getPrinter()->newline();
+            $this->getPrinter()->newline();
+            return;
+        }
 
+        $computed_properties = [];
+        $merge_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version);
+        
         if (count($merge_versions) === 0) {
             $this->getPrinter()->out('error: no versions to merge', 'error');
             $this->getPrinter()->newline();
-
             return;
         }
 
         foreach ($merge_versions as $merge_version) {
-            $version_file_path = PapiMethods::specFile($pdir, $api, $merge_version);
-            $json = PapiMethods::readJsonFromFile($version_file_path);
+            $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $merge_version . '.json';
+            $json = PapiMethods::readJsonFromFile($spec_file_path);
 
             if ($json['paths']) {
                 foreach ($json['paths'] as $path_key => $path) {
-                    foreach ($path as $propetry_key => $propetry) {
-                        $computed_path = '[paths]['.$path_key.']['.$propetry_key.']';
+                    foreach ($path as $property_key => $property) {
+                        $computed_path = '[paths]['.$path_key.']['.$property_key.']';
 
                         if (!isset($computed_properties[$computed_path])) {
-                            $computed_properties[$computed_path] = $propetry;
+                            $computed_properties[$computed_path] = $property;
                         }
                     }
                 }
             }
         }
-
-        $version_file_path = PapiMethods::specFile($pdir, $api, $version);
+        
         $json = PapiMethods::readJsonFromFile($version_file_path);
 
         // overwrite computed properties
@@ -76,6 +82,6 @@ class MergeController extends PapiController
             $json = PapiMethods::setNestedValue($json, $computed_key, $computed_value);
         }
 
-        PapiMethods::writeJsonToFile($json, PapiMethods::specRootDirectory($pdir).'/out/Aryeo/Aryeo.MERGED.json');
+        PapiMethods::writeJsonToFile($json, $out_path);
     }
 }
