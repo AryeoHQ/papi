@@ -19,7 +19,7 @@ use Minicli\Command\CommandCall;
 $app_path = $root_app.'/app/Command';
 
 if (!is_file($root_app . '/vendor/autoload.php')) {
-    $app_path = $root_app.'vendor/aryeohq/papi/app/Command';
+    $app_path = $root_app.'/vendor/aryeohq/papi/app/Command';
 }
 
 $app = new App(['app_path' => $app_path], './papi help');
