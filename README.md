@@ -1,6 +1,6 @@
-# Papi
+# PAPI
 
-A suite of tools for spec-driven development in Laravel.
+A suite of tools for spec-driven API development in Laravel.
 
 ## Usage
 
