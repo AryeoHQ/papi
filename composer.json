@@ -34,10 +34,10 @@
       "App\\": "app/"
     }
   },
-  "bin": [
-    "papi"
-  ],
   "require": {
     "minicli/minicli": "^2.0"
-  }
+  },
+  "bin": [
+    "bin/papi"
+  ]
 }

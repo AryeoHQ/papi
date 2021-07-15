@@ -1,0 +1,22 @@
+#!/usr/bin/php
+<?php
+
+if (php_sapi_name() !== 'cli') {
+    exit;
+}
+
+$root_app = dirname(__DIR__);
+
+if (!is_file($root_app . '/vendor/autoload.php')) {
+    $root_app = dirname(__DIR__, 4);
+}
+
+require $root_app . '/vendor/autoload.php';
+
+use Minicli\App;
+use Minicli\Command\CommandCall;
+
+$app = new App(['app_path' => $root_app.'/app/Command'], './papi help');
+$input = new CommandCall($argv);
+
+$app->runCommand($input->getRawArgs());
