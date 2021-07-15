@@ -1,0 +1,22 @@
+{
+  "name": "aryeohq/papi",
+  "description": "Powerful API (PAPI) Utilities",
+  "license": "Apache 2.0",
+  "version": "1.0.0",
+  "homepage": "https://github.com/AryeoHQ/papi",
+  "keywords": [
+    "cli",
+    "command-line",
+    "template",
+    "api",
+    "spec"
+  ],
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "require": {
+    "minicli/minicli": "^2.0"
+  }
+}
