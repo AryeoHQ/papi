@@ -11,12 +11,9 @@ class ModelsController extends PapiController
     public function boot(App $app)
     {
         parent::boot($app);
-        $this->description = 'clean all models for a specific version';
-        $this->arguments = [
-            ['version', 'version to use', '2021-06-17'],
-        ];
+        $this->description = 'clean models';
         $this->parameters = [
-            ['pdir', 'project directory', '/Users/jdoe/Dev/aryeo'],
+            ['mdir', 'models directory', '/Users/jdoe/Desktop/spec/models'],
         ];
         $this->notes = [
             'Cleaning models applies known defaults to models that',
@@ -30,18 +27,17 @@ class ModelsController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $version = $args[0];
-            $pdir = $this->getParam('pdir');
-            $this->cleanModels($pdir, $version);
+            $mdir = $this->getParam('mdir');
+            $this->cleanModels($mdir);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function cleanModels($pdir, $version)
+    public function cleanModels($mdir)
     {
-        foreach (PapiMethods::modelFiles($pdir, $version) as $model_file_name) {
-            $mpath = PapiMethods::modelFilePath($pdir, $model_file_name, $version);
+        foreach (PapiMethods::jsonFilesInDir($mdir) as $model_file_name) {
+            $mpath = $mdir . '/' . $model_file_name;
             $mjson = $this->cleanModel($mpath);
             PapiMethods::writeJsonToFile($mjson, $mpath);
         }
