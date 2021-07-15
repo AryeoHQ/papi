@@ -12,13 +12,12 @@ class TestsController extends PapiController
     {
         parent::boot($app);
         $this->description = 'make missing spec tests given an api spec';
-        $this->arguments = [
-            ['api', 'name of the api', 'Aryeo'],
-        ];
         $this->parameters = [
             ['pdir', 'project directory', '/Users/jdoe/Dev/aryeo'],
+            ['sdir', 'spec directory', '/Users/jdoe/Desktop/specs'],
+            ['tpath', 'path to test template', '/Users/jdoe/Desktop/Test.php']
         ];
-        $this->notes = ['Tests will be created in the ../../tests/Spec directory.'];
+        $this->notes = ['Tests will be created in the /tests/Spec directory.'];
     }
 
     public function handle()
@@ -26,26 +25,27 @@ class TestsController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $api = $args[0];
             $pdir = $this->getParam('pdir');
-            $this->handleMissingTests($pdir, $api);
+            $sdir = $this->getParam('sdir');
+            $tpath = $this->getParam('tpath');
+            $this->handleMissingTests($pdir, $sdir, $tpath);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function handleMissingTests($pdir, $api)
+    public function handleMissingTests($pdir, $sdir, $tpath)
     {
-        [$required_paths, $found_paths] = $this->determineMissingTestPaths($pdir, $api);
+        [$required_paths, $found_paths] = $this->determineMissingTestPaths($pdir, $sdir);
         $missing_paths = array_diff($required_paths, $found_paths);
 
-        $this->createMissingTests($api, $missing_paths);
-        $this->fillMissingMethods($pdir, $api);
+        $this->createMissingTests($missing_paths, $tpath);
+        $this->fillMissingMethods($pdir, $sdir);
     }
 
-    public function determineMissingTestPaths($pdir, $api)
+    public function determineMissingTestPaths($pdir, $sdir)
     {
-        $spec_files = PapiMethods::specFiles($pdir, $api);
+        $spec_files = PapiMethods::jsonFilesInDir($sdir);
 
         $required = [];
         $found = [];
@@ -54,7 +54,7 @@ class TestsController extends PapiController
         foreach ($spec_files as $spec_file) {
             [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
 
-            $json_string = file_get_contents(PapiMethods::specsDirectory($pdir, $api).'/'.$spec_file);
+            $json_string = file_get_contents($sdir.'/'.$spec_file);
             $json = json_decode($json_string, true);
 
             // for each path...
@@ -72,13 +72,14 @@ class TestsController extends PapiController
         return [$required, $found];
     }
 
-    public function createMissingTests($api, $test_paths)
+    public function createMissingTests($test_paths, $tpath)
     {
-        $template_test = file_get_contents('TemplateTest.php', true);
+        $template_test = file_get_contents($tpath, true);
 
         foreach ($test_paths as $test_path) {
             $version = basename(dirname($test_path));
-            $namespace = $api.'\v'.str_replace('-', '_', $version);
+            $spec_name = basename(dirname($test_path, 2));
+            $namespace = $spec_name.'\v'.str_replace('-', '_', $version);
             $class_name = basename($test_path, '.php');
 
             // replace template content...
@@ -96,15 +97,15 @@ class TestsController extends PapiController
         }
     }
 
-    public function fillMissingMethods($pdir, $api)
+    public function fillMissingMethods($pdir, $sdir)
     {
-        $spec_files = PapiMethods::specFiles($pdir, $api);
+        $spec_files = PapiMethods::jsonFilesInDir($sdir);
 
         // for each spec...
         foreach ($spec_files as $spec_file) {
             [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
 
-            $json_string = file_get_contents(PapiMethods::specsDirectory($pdir, $api).'/'.$spec_file);
+            $json_string = file_get_contents($sdir.'/'.$spec_file);
             $json = json_decode($json_string, true);
 
             $valid_methods = ['get', 'head', 'post', 'put', 'delete', 'connect', 'options', 'trace', 'patch'];

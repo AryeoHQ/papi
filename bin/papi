@@ -20,8 +20,6 @@ if ($is_vendor_bin) {
     $app_path = $root_app . '/vendor/aryeohq/papi/app/Command';
 }
 
-var_dump($app_path);
-
 // ------------------------------------------
 
 require $root_app . '/vendor/autoload.php';

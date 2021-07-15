@@ -2,9 +2,15 @@
 
 A suite of tools for spec-driven API development in Laravel.
 
+## Installation
+
+```bash
+composer require aryeohq/papi
+```
+
 ## Usage
 
 ```bash
 # show all commands
-./papi help
+./vendor/bin/papi help
 ```
