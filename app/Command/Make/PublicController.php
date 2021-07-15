@@ -12,17 +12,10 @@ class PublicController extends PapiController
     {
         parent::boot($app);
         $this->description = 'make public api spec from a de-referenced spec';
-        $this->arguments = [
-            ['api', 'name of the api', 'Aryeo'],
-            ['version', 'version to use', '2021-06-17'],
-        ];
         $this->parameters = [
-            ['pdir', 'project directory', '/Users/jdoe/Dev/aryeo'],
-            ['opath', 'absolute path to overrides file', '/tmp/overrides.json'],
-        ];
-        $this->notes = [
-            'This command assumes a dereferenced spec exists with the naming',
-            'convention of [api]-deref.[version].json.',
+            ['spath', 'path to spec file', '/Users/jdoe/Dev/aryeo/spec.json'],
+            ['ospath', 'write path for public api spec', '/Users/jdoe/Dev/aryeo/spec-public.json'],
+            ['opath', 'path to overrides file', '/tmp/overrides.json'],
         ];
     }
 
@@ -31,33 +24,30 @@ class PublicController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $api = $args[0];
-            $version = $args[1];
-            $pdir = $this->getParam('pdir');
+            $spath = $this->getParam('spath');
+            $ospath = $this->getParam('ospath');
             $overrides_path = $this->getParam('opath');
-            $this->preparePublicSpec($pdir, $api, $version, $overrides_path);
+            $this->preparePublicSpec($spath, $ospath, $overrides_path);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function preparePublicSpec($pdir, $api, $version, $overrides_path)
+    public function preparePublicSpec($spath, $ospath, $overrides_path)
     {
-        $spec_file_path = PapiMethods::derefSpecFile($pdir, $api, $version);
-
-        if (!$spec_file_path) {
-            $this->getPrinter()->out('error: cannot find out/'.$api.'/'.$api.'-deref.'.$version.'.json', 'error');
+        if (!$spath) {
+            $this->getPrinter()->out('error: cannot find ' . $spath, 'error');
             $this->getPrinter()->newline();
 
             return;
         } else {
-            $json = PapiMethods::readJsonFromFile($spec_file_path);
+            $json = PapiMethods::readJsonFromFile($spath);
             $json = $this->removeInternalPaths($json);
             $json = $this->removeUnreferencedTags($json);
             $json = $this->makePathMethodAdjustments($json);
             $json = $this->applyPublicOverrides($json, $overrides_path);
 
-            PapiMethods::writeJsonToFile($json, PapiMethods::specRootDirectory($pdir).'/out/Aryeo/Aryeo-public-deref.'.$version.'.json');
+            PapiMethods::writeJsonToFile($json, $ospath);
         }
     }
 
