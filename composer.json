@@ -1,9 +1,8 @@
 {
   "name": "aryeohq/papi",
   "description": "Powerful API (PAPI) utilities.",
-  "license": "Apache 2.0",
   "version": "1.0.0",
-  "homepage": "https://github.com/AryeoHQ/papi",
+  "type": "library",
   "keywords": [
     "cli",
     "command-line",
@@ -11,6 +10,25 @@
     "api",
     "spec"
   ],
+  "homepage": "https://github.com/AryeoHQ/papi",
+  "readme": "README.md",
+  "time": "2021-07-15",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Jarrod Parkes",
+      "email": "parkesfjarrod@gmail.com",
+      "homepage": "https://jarrodparkes.com",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "parkesfjarrod@gmail.com",
+    "issues": "https://github.com/AryeoHQ/papi/issues",
+    "wiki": "https://github.com/AryeoHQ/papi/wiki",
+    "source": "https://github.com/AryeoHQ/papi",
+    "docs": "https://github.com/AryeoHQ/papi/blob/master/README.md"
+  },
   "autoload": {
     "psr-4": {
       "App\\": "app/"
