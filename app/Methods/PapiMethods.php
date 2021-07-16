@@ -305,8 +305,14 @@ class PapiMethods
     public static function specPathToSegments($spec_file_path)
     {
         $path_only = substr($spec_file_path, 1);
+        $spec_path = array_map('ucfirst', preg_replace('/[\{\}]/', '', preg_split('/[\/\-]/', $path_only)));
 
-        return array_map('ucfirst', preg_replace('/[\{\}]/', '', preg_split('/[\/\-]/', $path_only)));
+        $camel_to_pascal = function ($string) {
+            return str_replace('_', '', ucwords($string, '_'));
+        };
+        $final_spec_path = array_map($camel_to_pascal, $spec_path);
+
+        return $final_spec_path;
     }
 
     public static function versionsEqualToOrBelow($spec_dir, $version)
