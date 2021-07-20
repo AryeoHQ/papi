@@ -167,13 +167,13 @@ class SafeController extends PapiController
 
                     // does the current spec have a response for this status code?
                     if ($current_route_response) {
-                        $l_route_schema = $last_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'properties' => []];
-                        $c_route_schema = $current_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'properties' => []];
+                        $last_route_schema = $last_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_route_response['description'], 'properties' => []];
+                        $current_route_schema = $current_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_route_response['description'], 'properties' => []];
 
                         // are the properties the same?
                         $error = $this->schemaDiff(
-                            $l_route_schema,
-                            $c_route_schema,
+                            $last_route_schema,
+                            $current_route_schema,
                             PapiMethods::formatRouteKey($route_key),
                             $status_code
                         );
@@ -328,10 +328,13 @@ class SafeController extends PapiController
 
                 // does the current spec have a response for this status code?
                 if ($current_route_response) {
+                    $last_route_schema = $last_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_route_response['description'], 'properties' => []];
+                    $current_route_schema = $current_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_route_response['description'], 'properties' => []];
+
                     // are the types the same?
                     $diff_errors = $this->schemaPropertyTypeDiff(
-                        $last_route_response['content']['application/json']['schema'],
-                        $current_route_response['content']['application/json']['schema'],
+                        $last_route_schema,
+                        $current_route_schema,
                         PapiMethods::formatRouteKey($route_key),
                         $status_code
                     );
@@ -353,10 +356,13 @@ class SafeController extends PapiController
             $last_route = PapiMethods::getNestedValue($last_json, $route_key);
             $current_route = PapiMethods::getNestedValue($current_json, $route_key);
 
+            $last_route_schema = $last_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_route['description'], 'properties' => []];
+            $current_route_schema = $current_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_route['description'], 'properties' => []];
+
             // are the request body property types the same?
             $diff_errors = $this->schemaPropertyTypeDiff(
-                $last_route['requestBody']['content']['application/json']['schema'],
-                $current_route['requestBody']['content']['application/json']['schema'],
+                $last_route_schema,
+                $current_route_schema,
                 PapiMethods::formatRouteKey($route_key),
                 'Request Body'
             );
