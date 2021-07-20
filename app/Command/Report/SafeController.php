@@ -122,17 +122,21 @@ class SafeController extends PapiController
             // is the security the same?
             $last_route_security = [];
             if (isset($last_route['security'])) {
-                $last_route_security = $last_route['security'];
+                foreach ($last_route['security'] as $security_object) {
+                    $last_route_security[] = array_keys($security_object)[0];
+                }
             }
             $current_route_security = [];
             if (isset($current_route['security'])) {
-                $current_route_security = $current_route['security'];
+                foreach ($current_route['security'] as $security_object) {
+                    $current_route_security[] = array_keys($security_object)[0];
+                }
             }
 
-            $diff = array_diff_assoc($current_route_security, $last_route_security);
+            $diff = array_diff($current_route_security, $last_route_security);
 
             if (count($diff) > 0) {
-                $new_schemes = array_filter(array_values(PapiMethods::arrayKeysRecursive($diff)), 'is_string');
+                $new_schemes = array_values($diff);
                 $errors[] = sprintf(
                     '%s: `%s` security has been added to this route.',
                     PapiMethods::formatRouteKey($route_key),
