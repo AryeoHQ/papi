@@ -650,18 +650,20 @@ class SafeController extends PapiController
 
         // are the property types the same?
         foreach ($a_schema_property_type_map as $a_property_path => $a_property_type) {
-            if ($b_schema_property_type_map[$a_property_path]) {
-                $b_property_type = $b_schema_property_type_map[$a_property_path];
+            if (isset($b_schema_property_type_map[$a_property_path])) {
+                if ($b_schema_property_type_map[$a_property_path]) {
+                    $b_property_type = $b_schema_property_type_map[$a_property_path];
 
-                if (strcmp($a_property_type, $b_property_type) !== 0) {
-                    $errors[] = sprintf(
-                        '%s (%s): Type mismatch (`%s`|`%s`) for `%s`.',
-                        $subject,
-                        $location,
-                        $a_property_type,
-                        $b_property_type,
-                        $a_property_path
-                    );
+                    if (strcmp($a_property_type, $b_property_type) !== 0) {
+                        $errors[] = sprintf(
+                            '%s (%s): Type mismatch (`%s`|`%s`) for `%s`.',
+                            $subject,
+                            $location,
+                            $a_property_type,
+                            $b_property_type,
+                            $a_property_path
+                        );
+                    }
                 }
             }
         }
@@ -728,17 +730,19 @@ class SafeController extends PapiController
 
         // for each param...
         foreach ($a_route_params as $a_route_param_key => $a_route_param_value) {
-            $b_route_param_value = $b_route_params[$a_route_param_key];
+            if (isset($b_route_params[$a_route_param_key])) {
+                $b_route_param_value = $b_route_params[$a_route_param_key];
 
-            if ($b_route_param_value) {
-                if (strcmp($a_route_param_value, $b_route_param_value) !== 0) {
-                    $errors[] = sprintf(
-                        '%s: Type mismatch (`%s`|`%s`) for `%s`.',
-                        PapiMethods::formatRouteKey($route_key),
-                        $a_route_param_value,
-                        $b_route_param_value,
-                        $a_route_param_key,
-                    );
+                if ($b_route_param_value) {
+                    if (strcmp($a_route_param_value, $b_route_param_value) !== 0) {
+                        $errors[] = sprintf(
+                            '%s: Type mismatch (`%s`|`%s`) for `%s`.',
+                            PapiMethods::formatRouteKey($route_key),
+                            $a_route_param_value,
+                            $b_route_param_value,
+                            $a_route_param_key,
+                        );
+                    }
                 }
             }
         }
@@ -756,15 +760,17 @@ class SafeController extends PapiController
 
         // for each param...
         foreach ($a_route_params as $a_route_param_key => $a_route_param_value) {
-            $b_route_param_value = $b_route_params[$a_route_param_key];
+            if (isset($b_route_params[$a_route_param_key])) {
+                $b_route_param_value = $b_route_params[$a_route_param_key];
 
-            if ($b_route_param_value) {
-                if (!$a_route_param_value && $b_route_param_value) {
-                    $errors[] = sprintf(
-                        '%s: New required parameter `%s`.',
-                        PapiMethods::formatRouteKey($route_key),
-                        $a_route_param_key,
-                    );
+                if ($b_route_param_value) {
+                    if (!$a_route_param_value && $b_route_param_value) {
+                        $errors[] = sprintf(
+                            '%s: New required parameter `%s`.',
+                            PapiMethods::formatRouteKey($route_key),
+                            $a_route_param_key,
+                        );
+                    }
                 }
             }
         }
