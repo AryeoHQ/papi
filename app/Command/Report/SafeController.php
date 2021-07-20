@@ -167,10 +167,13 @@ class SafeController extends PapiController
 
                     // does the current spec have a response for this status code?
                     if ($current_route_response) {
+                        $l_route_schema = $last_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'properties' => []];
+                        $c_route_schema = $current_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'properties' => []];
+
                         // are the properties the same?
                         $error = $this->schemaDiff(
-                            $last_route_response['content']['application/json']['schema'],
-                            $current_route_response['content']['application/json']['schema'],
+                            $l_route_schema,
+                            $c_route_schema,
                             PapiMethods::formatRouteKey($route_key),
                             $status_code
                         );
