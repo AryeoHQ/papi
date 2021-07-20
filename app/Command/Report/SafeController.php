@@ -503,9 +503,12 @@ class SafeController extends PapiController
             $last_route = PapiMethods::getNestedValue($last_json, $route_key);
             $current_route = PapiMethods::getNestedValue($current_json, $route_key);
 
+            $last_route_schema = $last_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
+            $current_route_schema = $current_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
+
             $diff_errors = $this->schemaPropertyRequiredDiff(
-                $last_route['requestBody']['content']['application/json']['schema'],
-                $current_route['requestBody']['content']['application/json']['schema'],
+                $last_route_schema,
+                $current_route_schema,
                 PapiMethods::formatRouteKey($route_key),
             );
 
@@ -598,7 +601,7 @@ class SafeController extends PapiController
     public function schemaPropertyRequiredMap($schema, $key = 'root', $map = [])
     {
         if ($schema['type'] === 'object') {
-            $required_keys = $schema['required'] ? $schema['required'] : [];
+            $required_keys = $schema['required'] ?? [];
             $map[$key] = $required_keys;
 
             foreach ($schema['properties'] as $property_key => $property) {
