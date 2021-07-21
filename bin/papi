@@ -17,7 +17,7 @@ if ($is_vendor_bin) {
 $app_path = $root_app . '/app/Command';
 
 if ($is_vendor_bin) {
-    $app_path = $root_app . '/vendor/aryeohq/papi/app/Command';
+    $app_path = $root_app . '/vendor/aryeo/papi/app/Command';
 }
 
 // ------------------------------------------
