@@ -1,7 +1,6 @@
 {
   "name": "aryeo/papi",
   "description": "Powerful API (PAPI) utilities.",
-  "version": "1.0.0",
   "type": "library",
   "keywords": [
     "cli",
@@ -35,6 +34,7 @@
     }
   },
   "require": {
+    "php": "^7.4",
     "minicli/minicli": "^2.0"
   },
   "bin": [
