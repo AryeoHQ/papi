@@ -518,7 +518,8 @@
           {
             "api_key": []
           }
-        ]
+        ],
+        "x-internal": true
       }
     },
     "/store/order": {
