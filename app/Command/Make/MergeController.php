@@ -16,7 +16,7 @@ class MergeController extends PapiController
             ['s_dir', 'spec directory', '/examples/reference/PetStore'],
             ['s_prefix', 'spec prefix', 'PetStore (e.g. PetStore.2021-07-23.json)'],
             ['version', 'highest version to include in the merge', '2021-07-23'],
-            ['out_path', 'write path for merged api spec', '/examples/out/PetStore.MERGED.json'],
+            ['out_path', 'write path for merged api spec', '/examples/out/PetStore/PetStore.MERGED.json'],
         ];
         $this->notes = [
             'When API versions are merged together, the most recent version of',

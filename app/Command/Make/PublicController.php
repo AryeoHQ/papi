@@ -13,9 +13,9 @@ class PublicController extends PapiController
         parent::boot($app);
         $this->description = 'make public api spec from a de-referenced spec';
         $this->parameters = [
-            ['s_path', 'path to spec file', '/examples/out/PetStore.MERGED.json'],
+            ['s_path', 'path to spec file', '/examples/out/PetStore/PetStore.MERGED.json'],
             ['o_path', 'path to overrides file', '/examples/overrides.json'],
-            ['out_path', 'write path for public api spec', '/examples/out/PetStore.PUBLIC.json'],
+            ['out_path', 'write path for public api spec', '/examples/out/PetStore/PetStore.PUBLIC.json'],
         ];
     }
 
