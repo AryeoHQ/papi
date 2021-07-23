@@ -1,0 +1,14 @@
+{
+    "404": {
+        "description": "Not Found"
+    },
+    "409": {
+        "description": "Conflict"
+    },
+    "422": {
+        "description": "Unprocessable Entity (WebDAV)"
+    },
+    "500": {
+        "description": "Internal Server Error"
+    }
+}

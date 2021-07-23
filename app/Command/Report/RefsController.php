@@ -15,8 +15,8 @@ class RefsController extends PapiController
         parent::boot($app);
         $this->description = 'report out-of-date refs';
         $this->parameters = [
-            ['s_path', 'path to spec file', '/Users/john/Desktop/reference/Aryeo/Aryeo.2021-07-02.json'],
-            ['m_dir', 'models directory', '/Users/john/Desktop/models']
+            ['s_path', 'path to spec file', '/examples/reference/PetStore/PetStore.2021-07-23.json'],
+            ['m_dir', 'models directory', '/examples/models']
         ];
     }
 
@@ -154,19 +154,18 @@ class RefsController extends PapiController
     public function checkModelRefs($spec_file_path, $models_dir, $version)
     {
         $errors = [];
-
         $spec_dir = dirname($spec_file_path);
-        $valid_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version);
-
+ 
         // for each model file...
         foreach (PapiMethods::jsonFilesInDir($models_dir) as $model_file_name) {
             $model_path = $models_dir . DIRECTORY_SEPARATOR . $model_file_name;
             $model_json = PapiMethods::readJsonFromFile($model_path);
             $model_version = basename(dirname($model_path));
-
+            $check_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $model_version);
+ 
             // for each $ref...
             foreach (PapiMethods::arrayFindRecursive($model_json, '$ref') as $result) {
-                $ref_errors = $this->checkRef($models_dir, $model_path, $model_version, $valid_versions, $result['path'], $result['value']);
+                $ref_errors = $this->checkRef($models_dir, $model_path, $model_version, $check_versions, $result['path'], $result['value']);
                 $errors = array_merge($errors, $ref_errors);
             }
         }

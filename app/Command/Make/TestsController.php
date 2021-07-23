@@ -13,9 +13,9 @@ class TestsController extends PapiController
         parent::boot($app);
         $this->description = 'make missing spec tests given an api spec';
         $this->parameters = [
-            ['p_dir', 'project directory', '/Users/john/Desktop/project'],
-            ['s_dir', 'spec directory', '/Users/john/Desktop/reference/Aryeo'],
-            ['t_path', 'path to test template', '/Users/john/Desktop/TemplateTest.php']
+            ['p_dir', 'project directory', '/examples/stubbed-laravel-project'],
+            ['s_dir', 'spec directory', '/examples/reference/PetStore'],
+            ['t_path', 'path to test template', '/examples/TemplateTest.php']
         ];
         $this->notes = ['Tests will be created in the [p_dir]/tests/Spec directory.'];
     }

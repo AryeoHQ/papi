@@ -14,8 +14,8 @@ class SafeController extends PapiController
         parent::boot($app);
         $this->description = 'check if changes to an api are safe';
         $this->parameters = [
-            ['l_spec', 'path to last spec reference', '/Users/john/Desktop/Aryeo.LAST.json'],
-            ['c_spec', 'path to current spec reference', '/Users/john/Desktop/Aryeo.CURRENT.json'],
+            ['l_spec', 'path to last spec reference', '/examples/out/PetStore/PetStore.LAST.json'],
+            ['c_spec', 'path to current spec reference', '/examples/out/PetStore/PetStore.CURRENT.json'],
         ];
     }
 
@@ -565,7 +565,7 @@ class SafeController extends PapiController
     public function schemaObjectPropertyMap($schema, $key = 'root', $map = [])
     {
         if ($schema['type'] === 'object') {
-            $property_keys = array_keys($schema['properties']);
+            $property_keys = array_keys($schema['properties'] ?? []);
             $map[$key] = $property_keys;
             foreach ($property_keys as $property_key) {
                 $map = array_merge($map, $this->schemaObjectPropertyMap($schema['properties'][$property_key], $key.'.'.$property_key, $map));
@@ -583,8 +583,9 @@ class SafeController extends PapiController
     {
         if ($schema['type'] === 'object') {
             $map[$key] = $schema['title'];
+            $properties = $schema['properties'] ?? [];
 
-            foreach ($schema['properties'] as $property_key => $property) {
+            foreach ($properties as $property_key => $property) {
                 $map = array_merge($map, $this->schemaPropertyTypeMap($property, $key.'.'.$property_key, $map));
             }
 

@@ -13,7 +13,7 @@ class ModelsController extends PapiController
         parent::boot($app);
         $this->description = 'clean models';
         $this->parameters = [
-            ['models_dir', 'models directory', '/Users/john/Desktop/spec/models'],
+            ['m_dir', 'models directory', '/examples/models'],
         ];
         $this->notes = [
             'Cleaning models applies known defaults to models that',
@@ -27,7 +27,7 @@ class ModelsController extends PapiController
         $args = array_slice($this->getArgs(), 3);
 
         if ($this->checkValidInputs($args)) {
-            $models_dir = $this->getParam('models_dir');
+            $models_dir = $this->getParam('m_dir');
             $this->cleanModels($models_dir);
         } else {
             $this->printCommandHelp();

@@ -1,0 +1,26 @@
+{
+    "title": "Address",
+    "type": "object",
+    "properties": {
+        "street_line_1": {
+            "type": "string",
+            "example": "437 Lytton"
+        },
+        "street_line_2": {
+            "type": "string",
+            "example": "Apartment 172"
+        },
+        "city": {
+            "type": "string",
+            "example": "Palo Alto"
+        },
+        "state": {
+            "type": "string",
+            "example": "CA"
+        },
+        "zip": {
+            "type": "string",
+            "example": "94301"
+        }
+    }
+}
