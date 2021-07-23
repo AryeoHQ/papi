@@ -37,6 +37,9 @@
     "php": "^7.4",
     "minicli/minicli": "^2.0"
   },
+  "config": {
+    "platform-check": false
+  },
   "bin": [
     "bin/papi"
   ]
