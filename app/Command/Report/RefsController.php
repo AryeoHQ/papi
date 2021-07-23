@@ -154,19 +154,18 @@ class RefsController extends PapiController
     public function checkModelRefs($spec_file_path, $models_dir, $version)
     {
         $errors = [];
-
         $spec_dir = dirname($spec_file_path);
-        $valid_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version);
-
+ 
         // for each model file...
         foreach (PapiMethods::jsonFilesInDir($models_dir) as $model_file_name) {
             $model_path = $models_dir . DIRECTORY_SEPARATOR . $model_file_name;
             $model_json = PapiMethods::readJsonFromFile($model_path);
             $model_version = basename(dirname($model_path));
-
+            $check_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $model_version);
+ 
             // for each $ref...
             foreach (PapiMethods::arrayFindRecursive($model_json, '$ref') as $result) {
-                $ref_errors = $this->checkRef($models_dir, $model_path, $model_version, $valid_versions, $result['path'], $result['value']);
+                $ref_errors = $this->checkRef($models_dir, $model_path, $model_version, $check_versions, $result['path'], $result['value']);
                 $errors = array_merge($errors, $ref_errors);
             }
         }
