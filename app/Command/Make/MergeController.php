@@ -13,10 +13,10 @@ class MergeController extends PapiController
         parent::boot($app);
         $this->description = 'make a merged api spec by squashing versions together';
         $this->parameters = [
-            ['s_dir', 'spec directory', '/Users/john/Desktop/reference/Aryeo'],
-            ['s_prefix', 'spec prefix', 'Aryeo (e.g. Aryeo.2021-06-17.json)'],
-            ['version', 'highest version to include in the merge', '2021-06-17'],
-            ['out_path', 'write path for merged api spec', '/Users/john/Desktop/reference/out/Aryeo.MERGED.json'],
+            ['s_dir', 'spec directory', '/examples/reference/PetStore'],
+            ['s_prefix', 'spec prefix', 'PetStore (e.g. PetStore.2021-07-23.json)'],
+            ['version', 'highest version to include in the merge', '2021-07-23'],
+            ['out_path', 'write path for merged api spec', '/examples/out/PetStore.MERGED.json'],
         ];
         $this->notes = [
             'When API versions are merged together, the most recent version of',

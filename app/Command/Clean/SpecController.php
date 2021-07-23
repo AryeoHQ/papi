@@ -13,8 +13,8 @@ class SpecController extends PapiController
         parent::boot($app);
         $this->description = 'clean a spec file';
         $this->parameters = [
-            ['s_path', 'path to spec file', '/Users/john/Desktop/reference/Aryeo/Aryeo.2021-06-17.json'],
-            ['r_path', 'path to responses json file', '/Users/john/Desktop/responses.json']
+            ['s_path', 'path to spec file', '/examples/reference/PetStore/PetStore.2021-07-23.json'],
+            ['r_path', 'path to responses json file', '/examples/responses.json']
         ];
         $this->notes = [
             'Cleaning a spec inserts standard error responses for known status',

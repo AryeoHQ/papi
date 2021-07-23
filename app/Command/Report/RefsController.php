@@ -15,8 +15,8 @@ class RefsController extends PapiController
         parent::boot($app);
         $this->description = 'report out-of-date refs';
         $this->parameters = [
-            ['s_path', 'path to spec file', '/Users/john/Desktop/reference/Aryeo/Aryeo.2021-07-02.json'],
-            ['m_dir', 'models directory', '/Users/john/Desktop/models']
+            ['s_path', 'path to spec file', '/examples/reference/PetStore/PetStore.2021-07-23.json'],
+            ['m_dir', 'models directory', '/examples/models']
         ];
     }
 
