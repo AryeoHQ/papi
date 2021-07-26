@@ -1,0 +1,6 @@
+{
+    "formats": [],
+    "extends": [
+        "spectral:oas"
+    ]
+}

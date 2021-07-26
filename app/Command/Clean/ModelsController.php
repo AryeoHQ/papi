@@ -13,6 +13,7 @@ class ModelsController extends PapiController
         parent::boot($app);
         $this->description = 'clean models';
         $this->parameters = [
+            ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['m_dir', 'models directory', '/examples/models', true],
         ];
         $this->notes = [
@@ -36,36 +37,38 @@ class ModelsController extends PapiController
 
     public function cleanModels($models_dir)
     {
-        foreach (PapiMethods::jsonFilesInDir($models_dir) as $model_file_name) {
+        $format = $this->getFormat();
+
+        foreach (PapiMethods::specFilesInDir($models_dir, $format) as $model_file_name) {
             $model_path = $models_dir . DIRECTORY_SEPARATOR . $model_file_name;
-            $model_json = $this->cleanModel($model_path);
-            PapiMethods::writeJsonToFile($model_json, $model_path);
+            $model_array = $this->cleanModel($model_path);
+            PapiMethods::writeSpecFile($model_array, $model_path, $format);
         }
     }
 
     public function cleanModel($model_file_path)
     {
-        $json = PapiMethods::readJsonFromFile($model_file_path);
+        $array = PapiMethods::readSpecFile($model_file_path);
 
-        if ($json['properties']) {
+        if ($array['properties']) {
             $required_properties = [];
 
-            if ($json['required']) {
-                $required_properties = $json['required'];
+            if ($array['required']) {
+                $required_properties = $array['required'];
             }
 
             $types_to_check = ['string', 'number', 'integer', 'boolean', 'array'];
-            foreach ($json['properties'] as $property_name => $property) {
+            foreach ($array['properties'] as $property_name => $property) {
                 if (in_array($property['type'], $types_to_check, true)) {
                     $property['nullable'] = !in_array($property_name, $required_properties, true);
                 }
                 if (isset($property['$ref'])) {
                     $property['nullable'] = !in_array($property_name, $required_properties, true);
                 }
-                $json['properties'][$property_name] = $property;
+                $array['properties'][$property_name] = $property;
             }
         }
 
-        return $json;
+        return $array;
     }
 }

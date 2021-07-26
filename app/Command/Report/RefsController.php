@@ -15,6 +15,7 @@ class RefsController extends PapiController
         parent::boot($app);
         $this->description = 'report out-of-date refs';
         $this->parameters = [
+            ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['s_path', 'path to spec file', '/examples/reference/PetStore/PetStore.2021-07-23.json', true],
             ['m_dir', 'models directory', '/examples/models', true]
         ];
@@ -39,9 +40,10 @@ class RefsController extends PapiController
         $unreferenced_errors = [];
 
         // get version from spec
-        $json = PapiMethods::readJsonFromFile($spec_path);
-        if ($json && isset($json['info']['version'])) {
-            $version = $json['info']['version'];
+        $array = PapiMethods::readSpecFile($spec_path);
+
+        if ($array && isset($array['info']['version'])) {
+            $version = $array['info']['version'];
         } else {
             $this->getPrinter()->out('👎 FAIL: Spec file does not contain valid version.', 'error');
             $this->getPrinter()->newline();
@@ -50,7 +52,7 @@ class RefsController extends PapiController
         }
         
         // all models start as unreferenced
-        $this->unreferenced_models = PapiMethods::models($models_dir . DIRECTORY_SEPARATOR . $version);
+        $this->unreferenced_models = PapiMethods::models($models_dir . DIRECTORY_SEPARATOR . $version, $this->getFormat());
 
         // check model $refs...
         $errors = array_merge($errors, $this->checkModelRefs($spec_path, $models_dir, $version));
@@ -101,7 +103,7 @@ class RefsController extends PapiController
         $temp_value = $ref_file_name;
         $split_value = explode('.', $ref_file_name);
         $ref_name = array_shift($split_value);
-        $ref_name_check = $ref_name.'.json';
+        $ref_name_check = $ref_name.'.'.$this->getFormat();
 
         // extract $ref version
         $matches = [];
@@ -157,14 +159,14 @@ class RefsController extends PapiController
         $spec_dir = dirname($spec_file_path);
  
         // for each model file...
-        foreach (PapiMethods::jsonFilesInDir($models_dir) as $model_file_name) {
+        foreach (PapiMethods::specFilesInDir($models_dir, $this->getFormat()) as $model_file_name) {
             $model_path = $models_dir . DIRECTORY_SEPARATOR . $model_file_name;
-            $model_json = PapiMethods::readJsonFromFile($model_path);
+            $model_array = PapiMethods::readSpecFile($model_path);
             $model_version = basename(dirname($model_path));
-            $check_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $model_version);
+            $check_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $model_version, $this->getFormat());
  
             // for each $ref...
-            foreach (PapiMethods::arrayFindRecursive($model_json, '$ref') as $result) {
+            foreach (PapiMethods::arrayFindRecursive($model_array, '$ref') as $result) {
                 $ref_errors = $this->checkRef($models_dir, $model_path, $model_version, $check_versions, $result['path'], $result['value']);
                 $errors = array_merge($errors, $ref_errors);
             }
@@ -178,13 +180,13 @@ class RefsController extends PapiController
         $errors = [];
 
         $spec_dir = dirname($spec_file_path);
-        $valid_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version);
+        $valid_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version, $this->getFormat());
         
-        $json = PapiMethods::readJsonFromFile($spec_file_path);
+        $array = PapiMethods::readSpecFile($spec_file_path);
 
-        if ($json) {
+        if ($array) {
             // for each $ref...
-            foreach (PapiMethods::arrayFindRecursive($json, '$ref') as $result) {
+            foreach (PapiMethods::arrayFindRecursive($array, '$ref') as $result) {
                 $ref_errors = $this->checkRef($models_dir, $spec_file_path, '', $valid_versions, $result['path'], $result['value']);
                 $errors = array_merge($errors, $ref_errors);
             }

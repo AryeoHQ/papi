@@ -13,6 +13,7 @@ class MergeController extends PapiController
         parent::boot($app);
         $this->description = 'make a merged api spec by squashing versions together';
         $this->parameters = [
+            ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['s_dir', 'spec directory', '/examples/reference/PetStore', true],
             ['s_prefix', 'spec prefix', 'PetStore (e.g. PetStore.2021-07-23.json)', true],
             ['version', 'highest version to include in the merge', '2021-07-23', true],
@@ -41,14 +42,16 @@ class MergeController extends PapiController
 
     public function mergeVersions($spec_dir, $spec_prefix, $version, $out_path)
     {
-        $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.json';
+        $format = $this->getFormat();
+        $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.' . $format;
+
         if (!PapiMethods::validPath($version_file_path)) {
             $this->printFileNotFound($version_file_path);
             return;
         }
 
         $computed_properties = [];
-        $merge_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version);
+        $merge_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version, $format);
         
         if (count($merge_versions) === 0) {
             $this->getPrinter()->out('error: no versions to merge', 'error');
@@ -57,11 +60,12 @@ class MergeController extends PapiController
         }
 
         foreach ($merge_versions as $merge_version) {
-            $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $merge_version . '.json';
-            $json = PapiMethods::readJsonFromFile($spec_file_path);
+            $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $merge_version . '.' . $format;
 
-            if ($json['paths']) {
-                foreach ($json['paths'] as $path_key => $path) {
+            $array = PapiMethods::readSpecFile($spec_file_path);
+
+            if ($array['paths']) {
+                foreach ($array['paths'] as $path_key => $path) {
                     foreach ($path as $property_key => $property) {
                         $computed_path = '[paths]['.$path_key.']['.$property_key.']';
 
@@ -73,13 +77,13 @@ class MergeController extends PapiController
             }
         }
         
-        $json = PapiMethods::readJsonFromFile($version_file_path);
+        $array = PapiMethods::readSpecFile($version_file_path);
 
         // overwrite computed properties
         foreach ($computed_properties as $computed_key => $computed_value) {
-            $json = PapiMethods::setNestedValue($json, $computed_key, $computed_value);
+            $array = PapiMethods::setNestedValue($array, $computed_key, $computed_value);
         }
 
-        PapiMethods::writeJsonToFile($json, $out_path);
+        PapiMethods::writeSpecFile($array, $out_path, $format);
     }
 }

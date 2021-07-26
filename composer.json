@@ -35,7 +35,8 @@
   },
   "require": {
     "php": "^7.4",
-    "minicli/minicli": "^2.0"
+    "minicli/minicli": "^2.0",
+    "symfony/yaml": "^5.3"
   },
   "config": {
     "platform-check": false
