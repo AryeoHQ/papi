@@ -13,10 +13,10 @@ class MergeController extends PapiController
         parent::boot($app);
         $this->description = 'make a merged api spec by squashing versions together';
         $this->parameters = [
-            ['s_dir', 'spec directory', '/examples/reference/PetStore'],
-            ['s_prefix', 'spec prefix', 'PetStore (e.g. PetStore.2021-07-23.json)'],
-            ['version', 'highest version to include in the merge', '2021-07-23'],
-            ['out_path', 'write path for merged api spec', '/examples/out/PetStore/PetStore.MERGED.json'],
+            ['s_dir', 'spec directory', '/examples/reference/PetStore', true],
+            ['s_prefix', 'spec prefix', 'PetStore (e.g. PetStore.2021-07-23.json)', true],
+            ['version', 'highest version to include in the merge', '2021-07-23', true],
+            ['out_path', 'write path for merged api spec', '/examples/out/PetStore/PetStore.MERGED.json', true],
         ];
         $this->notes = [
             'When API versions are merged together, the most recent version of',
@@ -42,10 +42,8 @@ class MergeController extends PapiController
     public function mergeVersions($spec_dir, $spec_prefix, $version, $out_path)
     {
         $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.json';
-        if (!PapiMethods::isValidFile($version_file_path)) {
-            $this->getPrinter()->out('👎 FAIL: Unable to find spec file for highest version.', 'error');
-            $this->getPrinter()->newline();
-            $this->getPrinter()->newline();
+        if (!PapiMethods::validPath($version_file_path)) {
+            $this->printFileNotFound($version_file_path);
             return;
         }
 

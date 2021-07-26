@@ -1,0 +1,5 @@
+{
+    "strip-path-parameters": [
+        "api_key"
+    ]
+}

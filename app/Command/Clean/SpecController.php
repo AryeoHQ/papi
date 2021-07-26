@@ -13,9 +13,9 @@ class SpecController extends PapiController
         parent::boot($app);
         $this->description = 'clean a spec file';
         $this->parameters = [
-            ['s_path', 'path to spec file', '/examples/reference/PetStore/PetStore.2021-07-23.json'],
-            ['r_path', 'path to responses JSON file', '/examples/responses.json'],
-            ['rm_path', 'path to response mappings JSON file', '/examples/response-mappings.json']
+            ['s_path', 'path to spec file', '/examples/reference/PetStore/PetStore.2021-07-23.json', true],
+            ['r_path', 'path to responses JSON file', '/examples/responses.json', true],
+            ['rm_path', 'path to response mappings JSON file', '/examples/response-mappings.json', true]
         ];
         $this->notes = [
             'Cleaning a spec inserts standard error responses for known status',
@@ -40,17 +40,17 @@ class SpecController extends PapiController
 
     public function cleanSpec($spec_file_path, $responses_path, $response_mappings_path)
     {
-        if (!PapiMethods::isValidFile($spec_file_path)) {
+        if (!PapiMethods::validPath($spec_file_path)) {
             $this->printFileNotFound($spec_file_path);
             return;
         }
 
-        if (!PapiMethods::isValidFile($responses_path)) {
+        if (!PapiMethods::validPath($responses_path)) {
             $this->printFileNotFound($responses_path);
             return;
         }
 
-        if (!PapiMethods::isValidFile($response_mappings_path)) {
+        if (!PapiMethods::validPath($response_mappings_path)) {
             $this->printFileNotFound($response_mappings_path);
             return;
         }
