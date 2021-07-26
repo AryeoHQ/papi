@@ -13,9 +13,10 @@ class PublicController extends PapiController
         parent::boot($app);
         $this->description = 'make public api spec from a de-referenced spec';
         $this->parameters = [
-            ['s_path', 'path to spec file', '/examples/out/PetStore/PetStore.MERGED.json'],
-            ['o_path', 'path to overrides file', '/examples/overrides.json'],
-            ['out_path', 'write path for public api spec', '/examples/out/PetStore/PetStore.PUBLIC.json'],
+            ['s_path', 'path to spec file', '/examples/out/PetStore/PetStore.MERGED.json', true],
+            ['o_path', 'path to overrides JSON file', '/examples/overrides.json', true],
+            ['out_path', 'write path for public api spec', '/examples/out/PetStore/PetStore.PUBLIC.json', true],
+            ['p_path', 'path to public customization JSON file', '/examples/public.json', false],
         ];
     }
 
@@ -27,28 +28,43 @@ class PublicController extends PapiController
             $spec_path = $this->getParam('s_path');
             $overrides_path = $this->getParam('o_path');
             $out_path = $this->getParam('out_path');
-            $this->preparePublicSpec($spec_path, $out_path, $overrides_path);
+
+            $public_customization_path = '';
+            if ($this->hasParam('p_path')) {
+                $public_customization_path = $this->getParam('p_path');
+            }
+
+            $this->preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customization_path);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function preparePublicSpec($spec_path, $out_path, $overrides_path)
+    public function preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customization_path)
     {
-        if (!$spec_path) {
-            $this->getPrinter()->out('error: cannot find ' . $spec_path, 'error');
-            $this->getPrinter()->newline();
-
+        if (!PapiMethods::validPath($spec_path)) {
+            $this->printFileNotFound($spec_path);
             return;
-        } else {
-            $json = PapiMethods::readJsonFromFile($spec_path);
-            $json = $this->removeInternalPaths($json);
-            $json = $this->removeUnreferencedTags($json);
-            $json = $this->makePathMethodAdjustments($json);
-            $json = $this->applyPublicOverrides($json, $overrides_path);
-
-            PapiMethods::writeJsonToFile($json, $out_path);
         }
+
+        if (!PapiMethods::validPath($overrides_path)) {
+            $this->printFileNotFound($overrides_path);
+            return;
+        }
+
+        if (PapiMethods::validPath($public_customization_path)) {
+            $public_customizations = PapiMethods::readJsonFromFile($public_customization_path);
+        } else {
+            $public_customizations = [];
+        }
+
+        $json = PapiMethods::readJsonFromFile($spec_path);
+        $json = $this->removeInternalPaths($json);
+        $json = $this->removeUnreferencedTags($json);
+        $json = $this->makePathMethodAdjustments($json, $public_customizations);
+        $json = $this->applyPublicOverrides($json, $overrides_path);
+
+        PapiMethods::writeJsonToFile($json, $out_path);
     }
 
     public function removeInternalPaths($json)

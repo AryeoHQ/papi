@@ -13,11 +13,11 @@ class DiffController extends PapiController
         parent::boot($app);
         $this->description = 'report the differences between two versions of an API';
         $this->parameters = [
-            ['s_dir', 'spec directory', '/examples/reference/PetStore'],
-            ['s_prefix', 'spec prefix', 'PetStore (e.g. PetStore.2021-07-23.json)'],
-            ['m_dir', 'models directory', '/examples/models'],
-            ['old_version', 'spec version that comes before new_version', '2021-07-23'],
-            ['new_version', 'spec version that comes after old_version', '2021-07-24'],
+            ['s_dir', 'spec directory', '/examples/reference/PetStore', true],
+            ['s_prefix', 'spec prefix', 'PetStore (e.g. PetStore.2021-07-23.json)', true],
+            ['m_dir', 'models directory', '/examples/models', true],
+            ['old_version', 'spec version that comes before new_version', '2021-07-23', true],
+            ['new_version', 'spec version that comes after old_version', '2021-07-24', true]
         ];
     }
 
