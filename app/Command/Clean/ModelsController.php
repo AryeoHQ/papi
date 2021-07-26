@@ -13,7 +13,7 @@ class ModelsController extends PapiController
         parent::boot($app);
         $this->description = 'clean models';
         $this->parameters = [
-            ['m_dir', 'models directory', '/examples/models'],
+            ['m_dir', 'models directory', '/examples/models', true],
         ];
         $this->notes = [
             'Cleaning models applies known defaults to models that',
