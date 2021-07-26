@@ -29,18 +29,24 @@ class PublicController extends PapiController
             $overrides_path = $this->getParam('o_path');
             $out_path = $this->getParam('out_path');
 
-            $public_customization_path = '';
+            $public_customizations = [];
             if ($this->hasParam('p_path')) {
                 $public_customization_path = $this->getParam('p_path');
+                if ($public_customization_path && !PapiMethods::validPath($public_customization_path)) {
+                    $this->printFileNotFound($public_customization_path);
+                    return;
+                } else {
+                    $public_customizations = PapiMethods::readJsonFromFile($public_customization_path);
+                }
             }
 
-            $this->preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customization_path);
+            $this->preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customizations);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customization_path)
+    public function preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customizations)
     {
         if (!PapiMethods::validPath($spec_path)) {
             $this->printFileNotFound($spec_path);
@@ -50,12 +56,6 @@ class PublicController extends PapiController
         if (!PapiMethods::validPath($overrides_path)) {
             $this->printFileNotFound($overrides_path);
             return;
-        }
-
-        if (PapiMethods::validPath($public_customization_path)) {
-            $public_customizations = PapiMethods::readJsonFromFile($public_customization_path);
-        } else {
-            $public_customizations = [];
         }
 
         $json = PapiMethods::readJsonFromFile($spec_path);
@@ -139,8 +139,17 @@ class PublicController extends PapiController
         return $json;
     }
 
-    public function makePathMethodAdjustments($json)
+    public function makePathMethodAdjustments($json, $public_customizations)
     {
+        // which path parameters should be stripped?
+        $strip_path_parameters = [];
+        if (isset($public_customizations['strip-path-parameters'])) {
+            $custom_strip_path_parameters = $public_customizations['strip-path-parameters'];
+            if (is_array($custom_strip_path_parameters)) {
+                $strip_path_parameters = $custom_strip_path_parameters;
+            }
+        }
+
         if (isset($json['paths'])) {
             // for each path...
             foreach ($json['paths'] as $path_key => $path) {
@@ -149,7 +158,7 @@ class PublicController extends PapiController
                     if ($method['parameters']) {
                         $parameters_to_keep = [];
                         foreach ($method['parameters'] as $parameter) {
-                            if ($parameter['name'] !== 'X-ARYEO-GROUP-UUID') {
+                            if (!in_array($parameter['name'], $strip_path_parameters)) {
                                 $parameters_to_keep[] = $parameter;
                             }
                         }
