@@ -55,6 +55,13 @@ class PapiController extends CommandController
         $this->printSectionEnd();
     }
 
+    public function printFileNotFound(string $filename)
+    {
+        $this->getPrinter()->out('👎 FAIL: Unable to find \''.$filename.'\'.', 'error');
+        $this->getPrinter()->newline();
+        $this->getPrinter()->newline();
+    }
+
     public function printUsage()
     {
         $command = $this->input->command;
