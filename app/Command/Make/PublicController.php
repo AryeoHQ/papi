@@ -13,9 +13,10 @@ class PublicController extends PapiController
         parent::boot($app);
         $this->description = 'make public api spec from a de-referenced spec';
         $this->parameters = [
-            ['s_path', 'path to spec file', '/examples/out/PetStore/PetStore.MERGED.json'],
-            ['o_path', 'path to overrides file', '/examples/overrides.json'],
-            ['out_path', 'write path for public api spec', '/examples/out/PetStore/PetStore.PUBLIC.json'],
+            ['s_path', 'path to spec file', '/examples/out/PetStore/PetStore.MERGED.json', true],
+            ['o_path', 'path to overrides JSON file', '/examples/overrides.json', true],
+            ['out_path', 'write path for public api spec', '/examples/out/PetStore/PetStore.PUBLIC.json', true],
+            ['p_path', 'path to public customization JSON file', '/examples/public.json', false],
         ];
     }
 
@@ -27,28 +28,43 @@ class PublicController extends PapiController
             $spec_path = $this->getParam('s_path');
             $overrides_path = $this->getParam('o_path');
             $out_path = $this->getParam('out_path');
-            $this->preparePublicSpec($spec_path, $out_path, $overrides_path);
+
+            $public_customizations = [];
+            if ($this->hasParam('p_path')) {
+                $public_customization_path = $this->getParam('p_path');
+                if ($public_customization_path && !PapiMethods::validPath($public_customization_path)) {
+                    $this->printFileNotFound($public_customization_path);
+                    return;
+                } else {
+                    $public_customizations = PapiMethods::readJsonFromFile($public_customization_path);
+                }
+            }
+
+            $this->preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customizations);
         } else {
             $this->printCommandHelp();
         }
     }
 
-    public function preparePublicSpec($spec_path, $out_path, $overrides_path)
+    public function preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customizations)
     {
-        if (!$spec_path) {
-            $this->getPrinter()->out('error: cannot find ' . $spec_path, 'error');
-            $this->getPrinter()->newline();
-
+        if (!PapiMethods::validPath($spec_path)) {
+            $this->printFileNotFound($spec_path);
             return;
-        } else {
-            $json = PapiMethods::readJsonFromFile($spec_path);
-            $json = $this->removeInternalPaths($json);
-            $json = $this->removeUnreferencedTags($json);
-            $json = $this->makePathMethodAdjustments($json);
-            $json = $this->applyPublicOverrides($json, $overrides_path);
-
-            PapiMethods::writeJsonToFile($json, $out_path);
         }
+
+        if (!PapiMethods::validPath($overrides_path)) {
+            $this->printFileNotFound($overrides_path);
+            return;
+        }
+
+        $json = PapiMethods::readJsonFromFile($spec_path);
+        $json = $this->removeInternalPaths($json);
+        $json = $this->removeUnreferencedTags($json);
+        $json = $this->makePathMethodAdjustments($json, $public_customizations);
+        $json = $this->applyPublicOverrides($json, $overrides_path);
+
+        PapiMethods::writeJsonToFile($json, $out_path);
     }
 
     public function removeInternalPaths($json)
@@ -123,8 +139,17 @@ class PublicController extends PapiController
         return $json;
     }
 
-    public function makePathMethodAdjustments($json)
+    public function makePathMethodAdjustments($json, $public_customizations)
     {
+        // which path parameters should be stripped?
+        $strip_path_parameters = [];
+        if (isset($public_customizations['strip-path-parameters'])) {
+            $custom_strip_path_parameters = $public_customizations['strip-path-parameters'];
+            if (is_array($custom_strip_path_parameters)) {
+                $strip_path_parameters = $custom_strip_path_parameters;
+            }
+        }
+
         if (isset($json['paths'])) {
             // for each path...
             foreach ($json['paths'] as $path_key => $path) {
@@ -133,7 +158,7 @@ class PublicController extends PapiController
                     if ($method['parameters']) {
                         $parameters_to_keep = [];
                         foreach ($method['parameters'] as $parameter) {
-                            if ($parameter['name'] !== 'X-ARYEO-GROUP-UUID') {
+                            if (!in_array($parameter['name'], $strip_path_parameters)) {
                                 $parameters_to_keep[] = $parameter;
                             }
                         }

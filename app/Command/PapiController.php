@@ -55,6 +55,13 @@ class PapiController extends CommandController
         $this->printSectionEnd();
     }
 
+    public function printFileNotFound(string $filename)
+    {
+        $this->getPrinter()->out('👎 FAIL: Unable to find \''.$filename.'\'.', 'error');
+        $this->getPrinter()->newline();
+        $this->getPrinter()->newline();
+    }
+
     public function printUsage()
     {
         $command = $this->input->command;
@@ -175,8 +182,27 @@ class PapiController extends CommandController
     public function printParameters()
     {
         if (count($this->parameters) > 0) {
+            $required_parameters = array_filter($this->parameters, function ($parameter) {
+                return $parameter[3];
+            });
+
+            $optional_parameters = array_filter($this->parameters, function ($parameter) {
+                return !$parameter[3];
+            });
+
             $this->getPrinter()->out('Parameters', 'bold');
-            foreach ($this->parameters as $parameter) {
+            foreach ($required_parameters as $parameter) {
+                $this->getPrinter()->newline();
+                $this->getPrinter()->out('  '.str_pad($parameter[0], 10, ' ', STR_PAD_RIGHT), 'success');
+                $this->getPrinter()->rawOutput("\t".$parameter[1]);
+                if (!empty($parameter[2])) {
+                    $this->getPrinter()->out(' [ex: '.$parameter[2].']', 'info');
+                }
+            }
+            $this->printSectionEnd();
+
+            $this->getPrinter()->out('Optional Parameters', 'bold');
+            foreach ($optional_parameters as $parameter) {
                 $this->getPrinter()->newline();
                 $this->getPrinter()->out('  '.str_pad($parameter[0], 10, ' ', STR_PAD_RIGHT), 'success');
                 $this->getPrinter()->rawOutput("\t".$parameter[1]);
@@ -257,7 +283,7 @@ class PapiController extends CommandController
 
         $proper_params = true;
         foreach ($this->parameters as $parameter) {
-            if (!$this->hasParam($parameter[0])) {
+            if (!$this->hasParam($parameter[0]) && $parameter[3]) {
                 $proper_params = false;
                 break;
             }
