@@ -297,24 +297,6 @@
                 "function": "falsy"
             }
         },
-        "spec-request-body-and-response-are-refs": {
-            "formats": [
-                "oas2",
-                "oas3"
-            ],
-            "description": "Request bodies and responses must be `$ref`. Convert all request bodies and responses first-class models and place in the `/models` directory.",
-            "severity": "error",
-            "given": [
-                "$.paths..responses.*.content.application/json.schema",
-                "$.paths..requestBody.content.application/json.schema"
-            ],
-            "then": [
-                {
-                    "field": "$ref",
-                    "function": "truthy"
-                }
-            ]
-        },
         "spec-responses-application-json": {
             "formats": [
                 "oas2",

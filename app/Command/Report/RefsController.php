@@ -95,6 +95,7 @@ class RefsController extends PapiController
     public function checkRef($models_dir, $file, $container_version, $valid_versions, $key, $value)
     {
         $errors = [];
+        $format = $this->getFormat();
 
         // extract $ref filename and model name
         $temp_value = $value;
@@ -103,7 +104,6 @@ class RefsController extends PapiController
         $temp_value = $ref_file_name;
         $split_value = explode('.', $ref_file_name);
         $ref_name = array_shift($split_value);
-        $ref_name_check = $ref_name.'.'.$this->getFormat();
 
         // extract $ref version
         $matches = [];
@@ -121,8 +121,18 @@ class RefsController extends PapiController
         }
 
         // see if the current $ref even exists!
-        $current_path_check = $models_dir.DIRECTORY_SEPARATOR.$ref_version.DIRECTORY_SEPARATOR.$ref_name_check;
-        if (!file_exists($current_path_check)) {
+        $current_file_exists = false;
+        $valid_extensions = PapiMethods::validExtensions($format);
+        foreach ($valid_extensions as $extension) {
+            $current_path_check = $models_dir.DIRECTORY_SEPARATOR.$ref_version.DIRECTORY_SEPARATOR.$ref_name.'.'.$extension;
+
+            if (PapiMethods::validPath($current_path_check)) {
+                $current_file_exists = true;
+                break;
+            }
+        }
+
+        if (!$current_file_exists) {
             $error = 'File Path: '.$file;
             $error = $error."\nReference Path: ".$key;
             $error = $error."\nCurrent Value: ".$ref_version.DIRECTORY_SEPARATOR.$ref_file_name." (DNE!)\n\n";
@@ -138,13 +148,22 @@ class RefsController extends PapiController
 
         // see if there is a newer $ref...
         foreach ($versions_to_check as $version_to_check) {
-            $ref_path_check = $models_dir.DIRECTORY_SEPARATOR.$version_to_check.DIRECTORY_SEPARATOR.$ref_name_check;
-            
-            if (file_exists($ref_path_check)) {
+            $newer_file_exists = false;
+            $valid_extensions = PapiMethods::validExtensions($format);
+            foreach ($valid_extensions as $extension) {
+                $ref_path_check = $models_dir.DIRECTORY_SEPARATOR.$version_to_check.DIRECTORY_SEPARATOR.$ref_name.'.'.$extension;
+
+                if (PapiMethods::validPath($ref_path_check)) {
+                    $newer_file_exists = true;
+                    break;
+                }
+            }
+
+            if ($newer_file_exists) {
                 $error = 'File Path: '.$file;
                 $error = $error."\nReference Path: ".$key;
                 $error = $error."\nCurrent Value: ".$ref_version.DIRECTORY_SEPARATOR.$ref_file_name;
-                $error = $error."\nRecommended Value: ".$version_to_check.DIRECTORY_SEPARATOR.$ref_name_check."\n\n";
+                $error = $error."\nRecommended Value: ".$version_to_check.DIRECTORY_SEPARATOR.$ref_name."\n\n";
                 $errors[] = $error;
                 break;
             }
