@@ -14,7 +14,6 @@ class SafeController extends PapiController
         parent::boot($app);
         $this->description = 'check if changes to an api are safe';
         $this->parameters = [
-            ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['l_spec', 'path to last spec reference', '/examples/out/PetStore/PetStore.LAST.json', true],
             ['c_spec', 'path to current spec reference', '/examples/out/PetStore/PetStore.CURRENT.json', true],
         ];
