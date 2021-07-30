@@ -67,8 +67,20 @@ class DiffController extends PapiController
     public function gatherRoutesForVersions($spec_dir, $spec_name, $versions)
     {
         $routes = [];
+
+        $format = $this->getFormat();
+        $valid_extensions = PapiMethods::validExtensions($format);
+
         foreach ($versions as $version) {
-            $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_name . '.' . $version . '.' . $this->getFormat();
+            $spec_file_path = '';
+
+            foreach ($valid_extensions as $extension) {
+                $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_name . '.' . $version . '.' . $extension;
+                if (PapiMethods::validPath($spec_file_path)) {
+                    break;
+                }
+            }
+
             $v_routes = PapiMethods::routes($spec_file_path);
             $routes = array_merge($v_routes, $routes);
         }
