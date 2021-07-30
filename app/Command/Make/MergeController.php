@@ -43,24 +43,43 @@ class MergeController extends PapiController
     public function mergeVersions($spec_dir, $spec_prefix, $version, $out_path)
     {
         $format = $this->getFormat();
-        $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.' . $format;
 
-        if (!PapiMethods::validPath($version_file_path)) {
+        // ensure target spec exists
+        $version_file_found = false;
+        $valid_extensions = PapiMethods::validExtensions($format);
+        foreach ($valid_extensions as $extension) {
+            $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.' . $extension;
+
+            if (PapiMethods::validPath($version_file_path)) {
+                $version_file_found = true;
+                break;
+            }
+        }
+        if (!$version_file_found) {
+            $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.(' . implode("|", $valid_extensions) . ')';
             $this->printFileNotFound($version_file_path);
             return;
         }
 
+        // determine merge versions
         $computed_properties = [];
         $merge_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $version, $format);
-        
         if (count($merge_versions) === 0) {
             $this->getPrinter()->out('error: no versions to merge', 'error');
             $this->getPrinter()->newline();
             return;
         }
 
+        // get computed properties
         foreach ($merge_versions as $merge_version) {
-            $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $merge_version . '.' . $format;
+            $spec_file_path = '';
+
+            foreach ($valid_extensions as $extension) {
+                $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $merge_version . '.' . $extension;
+                if (PapiMethods::validPath($spec_file_path)) {
+                    break;
+                }
+            }
 
             $array = PapiMethods::readSpecFile($spec_file_path);
 
@@ -68,7 +87,6 @@ class MergeController extends PapiController
                 foreach ($array['paths'] as $path_key => $path) {
                     foreach ($path as $property_key => $property) {
                         $computed_path = '[paths]['.$path_key.']['.$property_key.']';
-
                         if (!isset($computed_properties[$computed_path])) {
                             $computed_properties[$computed_path] = $property;
                         }

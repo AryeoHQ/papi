@@ -43,17 +43,20 @@ class PapiMethods
         return $result;
     }
 
+    public static function validExtensions($format): array
+    {
+        if ($format == 'yaml') {
+            return ['yml', 'YML', 'yaml', 'YAML'];
+        } elseif ($format == 'json') {
+            return ['json', 'JSON'];
+        } else {
+            return [];
+        }
+    }
+
     public static function validExtension($format, $extension)
     {
-        $extension = strtoupper($extension);
-
-        if ($format == 'yaml') {
-            return $extension == 'YML' || $extension == 'YAML';
-        } elseif ($format == 'json') {
-            return $extension == 'JSON';
-        } else {
-            return false;
-        }
+        return in_array($extension, PapiMethods::validExtensions($format));
     }
 
     public static function specFilesInDir(string $dir, string $format)
