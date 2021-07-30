@@ -2,5 +2,506 @@
     "formats": [],
     "extends": [
         "spectral:oas"
-    ]
+    ],
+    "rules": {
+        "spec-paths-naming-convention": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Paths should be lower kebab-case with snake_case parameters, if provided.",
+            "severity": "warn",
+            "given": "$.paths[*]~",
+            "then": [
+                {
+                    "function": "pattern",
+                    "functionOptions": {
+                        "notMatch": "/([a-z]+_){1,10}[a-z]+(/)?"
+                    }
+                },
+                {
+                    "function": "pattern",
+                    "functionOptions": {
+                        "notMatch": "/[a-z]+[A-Z][a-z]+(/?)"
+                    }
+                }
+            ]
+        },
+        "spec-no-nulls": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "APIs must not produce or consume `nullable` values.",
+            "severity": "warn",
+            "given": "$..nullable",
+            "then": {
+                "function": "falsy"
+            }
+        },
+        "spec-requests-get-invalid-codes": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "GET requests should not define `201`, `202`, `204`, or `409` responses.",
+            "severity": "warn",
+            "given": "$..paths.*[?( @property == 'get' )].responses.*~",
+            "then": {
+                "function": "pattern",
+                "functionOptions": {
+                    "notMatch": "(201|202|204|409)"
+                }
+            }
+        },
+        "spec-requests-post-invalid-codes": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "POST requests should not define `204` responses.",
+            "severity": "warn",
+            "given": "$..paths.*[?( @property == 'post' )].responses.*~",
+            "then": {
+                "function": "pattern",
+                "functionOptions": {
+                    "notMatch": "204"
+                }
+            }
+        },
+        "spec-requests-put-invalid-codes": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "PUT requests should not define `201` responses.",
+            "severity": "warn",
+            "given": "$..paths.*[?( @property == 'put' )].responses.*~",
+            "then": {
+                "function": "pattern",
+                "functionOptions": {
+                    "notMatch": "201"
+                }
+            }
+        },
+        "spec-requests-patch-delete-invalid-codes": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "PATCH/DELETE requests should not define `201` or `202` responses.",
+            "severity": "warn",
+            "given": [
+                "$..paths.*[?( @property == 'patch' )].responses.*~",
+                "$..paths.*[?( @property == 'delete' )].responses.*~"
+            ],
+            "then": {
+                "function": "pattern",
+                "functionOptions": {
+                    "notMatch": "(201|202)"
+                }
+            }
+        },
+        "spec-requests-get-must-have-200": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "GET requests must define a `200` response.",
+            "severity": "warn",
+            "given": [
+                "$..paths.*[?( @property == 'get' )].responses"
+            ],
+            "then": [
+                {
+                    "field": "200",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "spec-requests-get-auto-generated-responses": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "`404`, `422`, and `500` responses should ALL be defined. Run `papi clean spec` to resolve.",
+            "severity": "warn",
+            "given": [
+                "$..paths.*[?( @property == 'get' )].responses"
+            ],
+            "then": [
+                {
+                    "field": "404",
+                    "function": "truthy"
+                },
+                {
+                    "field": "422",
+                    "function": "truthy"
+                },
+                {
+                    "field": "500",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "spec-requests-all-auto-generated-responses": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "`422` and `500` responses should be defined. Run `papi clean spec` to resolve.",
+            "severity": "warn",
+            "given": [
+                "$..paths.*[?( @property == 'post' )].responses",
+                "$..paths.*[?( @property == 'put' )].responses",
+                "$..paths.*[?( @property == 'patch' )].responses",
+                "$..paths.*[?( @property == 'delete' )].responses"
+            ],
+            "then": [
+                {
+                    "field": "422",
+                    "function": "truthy"
+                },
+                {
+                    "field": "500",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "spec-parameters-literal-example": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Literal parameter `schema.example` must be present and non-empty.",
+            "severity": "warn",
+            "given": [
+                "$..paths.*.*.parameters..[?(@.type == 'string'||@.type == 'number'||@.type == 'integer'||@.type == 'boolean')]",
+                "$..paths.*.parameters..[?(@.type == 'string'||@.type == 'number'||@.type == 'integer'||@.type == 'boolean')]",
+                "$..properties..[?(@.type == 'string'||@.type == 'number'||@.type == 'integer'||@.type == 'boolean')]"
+            ],
+            "then": {
+                "field": "example",
+                "function": "truthy"
+            }
+        },
+        "spec-parameters-string-min-max": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "String properties must specify a `minLength` (0 or 1) and `maxLength`.",
+            "severity": "warn",
+            "given": [
+                "$..paths.*.*.parameters.*[?(@.type == 'string')]",
+                "$..paths.*.parameters.*[?(@.type == 'string')]"
+            ],
+            "then": [
+                {
+                    "field": "minLength",
+                    "function": "enumeration",
+                    "functionOptions": {
+                        "values": [
+                            0,
+                            1
+                        ]
+                    }
+                },
+                {
+                    "field": "maxLength",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "spec-parameters-description": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Parameter `description` must be present and non-empty.",
+            "severity": "warn",
+            "given": [
+                "$..paths.*.*.parameters.*",
+                "$..paths.*.parameters.*",
+                "$..properties.*"
+            ],
+            "then": [
+                {
+                    "field": "description",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "spec-allowed-methods": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Methods can only be `GET`, `POST`, `PUT`, `PATCH`, or `DELETE`.",
+            "severity": "warn",
+            "given": "$..paths.*[?( @property != 'parameters' )]~",
+            "then": {
+                "function": "enumeration",
+                "functionOptions": {
+                    "values": [
+                        "get",
+                        "post",
+                        "put",
+                        "patch",
+                        "delete"
+                    ]
+                }
+            }
+        },
+        "spec-allowed-responses-codes": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Response code must be in set (200, 201, 202, 204, 400, 401, 403, 404, 405, 406, 409, 415, 422, 429, 500, 503).",
+            "severity": "warn",
+            "given": "$..paths.*[?( @property != 'parameters' )].responses.*~",
+            "then": {
+                "function": "enumeration",
+                "functionOptions": {
+                    "values": [
+                        "200",
+                        "201",
+                        "202",
+                        "204",
+                        "400",
+                        "401",
+                        "403",
+                        "404",
+                        "405",
+                        "406",
+                        "409",
+                        "415",
+                        "422",
+                        "429",
+                        "500",
+                        "503"
+                    ]
+                }
+            }
+        },
+        "spec-get-requests-no-request-body": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "GET requests cannot accept `requestBody`.",
+            "severity": "warn",
+            "given": "$.paths..get.requestBody",
+            "then": {
+                "function": "falsy"
+            }
+        },
+        "spec-request-body-and-response-are-refs": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Request bodies and responses must be `$ref`. Convert all request bodies and responses first-class models and place in the `/models` directory.",
+            "severity": "error",
+            "given": [
+                "$.paths..responses.*.content.application/json.schema",
+                "$.paths..requestBody.content.application/json.schema"
+            ],
+            "then": [
+                {
+                    "field": "$ref",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "spec-responses-application-json": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Responses must be `application/json`.",
+            "severity": "off",
+            "given": "$..paths..responses.*",
+            "then": {
+                "field": "content.application/json",
+                "function": "truthy"
+            }
+        },
+        "spec-properties-snake-case": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "Properties should be lower snake_case.",
+            "severity": "warn",
+            "given": [
+                "$..parameters[?(@.in != 'header')].name",
+                "$..schema.properties[*]~"
+            ],
+            "then": {
+                "function": "pattern",
+                "functionOptions": {
+                    "match": "^[a-z\\[\\]]+(_[a-z\\[\\]]+)*$"
+                }
+            }
+        },
+        "spec-responses-409-error": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "409 errors should respond with an ApiError",
+            "severity": "warn",
+            "given": "$..paths.*[?( @property != 'parameters' )].responses.409",
+            "then": [
+                {
+                    "field": "content.application/json.schema",
+                    "function": "truthy"
+                },
+                {
+                    "field": "content.application/json.schema.title",
+                    "function": "enumeration",
+                    "functionOptions": {
+                        "values": [
+                            "warn"
+                        ]
+                    }
+                }
+            ]
+        },
+        "spec-responses-422-validation-failure": {
+            "formats": [
+                "oas2",
+                "oas3"
+            ],
+            "description": "422 errors should respond with an ApiFail",
+            "severity": "warn",
+            "given": "$..paths.*[?( @property != 'parameters' )].responses.422",
+            "then": [
+                {
+                    "field": "content.application/json.schema",
+                    "function": "truthy"
+                },
+                {
+                    "field": "content.application/json.schema.title",
+                    "function": "enumeration",
+                    "functionOptions": {
+                        "values": [
+                            "ApiFail"
+                        ]
+                    }
+                }
+            ]
+        },
+        "model-properties-snake-case": {
+            "formats": [
+                "json-schema-loose"
+            ],
+            "description": "Properties should be lower snake_case.",
+            "severity": "warn",
+            "given": "$..properties.*~",
+            "then": {
+                "function": "pattern",
+                "functionOptions": {
+                    "match": "^[a-z0-9\\[\\]]+(_[a-z0-9\\[\\]]+)*$"
+                }
+            }
+        },
+        "model-properties-description": {
+            "formats": [
+                "json-schema-loose"
+            ],
+            "description": "Property `type` and `description` must be present and non-empty.",
+            "severity": "warn",
+            "given": "$..properties.[?(@.type == 'string'||@.type == 'number'||@.type == 'integer'||@.type == 'boolean'||@.type == 'object')]",
+            "then": [
+                {
+                    "field": "type",
+                    "function": "truthy"
+                },
+                {
+                    "field": "description",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "model-properties-literal-example": {
+            "formats": [
+                "json-schema-loose"
+            ],
+            "description": "Literal property `example` must be present and non-empty.",
+            "severity": "warn",
+            "given": "$..properties[?(@.type == 'string'||@.type == 'number'||@.type == 'integer'||@.type == 'boolean')]",
+            "then": {
+                "field": "example",
+                "function": "truthy"
+            }
+        },
+        "model-properties-date-example-format": {
+            "formats": [
+                "json-schema-loose"
+            ],
+            "description": "Date property `example` must be specified in yyyy-mm-dd format.",
+            "severity": "warn",
+            "given": "$..properties[?(@.type == 'string'&&@.format == 'date')]",
+            "then": {
+                "field": "example",
+                "function": "pattern",
+                "functionOptions": {
+                    "match": "\\d{4}-\\d{2}-\\d{2}"
+                }
+            }
+        },
+        "model-properties-date-time-example-format": {
+            "formats": [
+                "json-schema-loose"
+            ],
+            "description": "Date-time property `example` must be specified in ISO 8601 format.",
+            "severity": "warn",
+            "given": "$..properties[?(@.type == 'string'&&@.format == 'date-time')]",
+            "then": {
+                "field": "example",
+                "function": "pattern",
+                "functionOptions": {
+                    "match": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+                }
+            }
+        },
+        "model-properties-strings-min-max": {
+            "formats": [
+                "json-schema-loose"
+            ],
+            "description": "String properties must specify a `minLength` (0 or 1) and `maxLength`.",
+            "severity": "warn",
+            "given": "$..properties[?(@.type == 'string')]",
+            "then": [
+                {
+                    "field": "minLength",
+                    "function": "enumeration",
+                    "functionOptions": {
+                        "values": [
+                            0,
+                            1
+                        ]
+                    }
+                },
+                {
+                    "field": "maxLength",
+                    "function": "truthy"
+                }
+            ]
+        },
+        "use-property-examples": {
+            "formats": [
+                "json-schema-loose"
+            ],
+            "description": "Don't use examples. Use property example values instead.",
+            "severity": "error",
+            "given": "$..examples",
+            "then": {
+                "function": "falsy"
+            }
+        }
+    }
 }
