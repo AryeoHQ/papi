@@ -91,12 +91,12 @@ class PapiMethods
     }
 
     /*
-     * Reading and Writing
+     * I/O
      */
 
     public static function readSpecFile($file_path)
     {
-        if (realpath($file_path) && file_exists($file_path)) {
+        if (file_exists($file_path)) {
             $contents = file_get_contents($file_path);
             $extension = strtoupper(pathinfo($file_path, PATHINFO_EXTENSION));
 
@@ -210,7 +210,7 @@ class PapiMethods
     }
 
     /*
-     * Miscellaneous
+     * Misc
      */
 
     public static function formatRouteKey($route_key)

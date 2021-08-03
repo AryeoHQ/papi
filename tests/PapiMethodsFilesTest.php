@@ -5,7 +5,7 @@ namespace Tests;
 use App\Methods\PapiMethods;
 use PHPUnit\Framework\TestCase;
 
-class PapiMethodsTest extends TestCase
+class PapiMethodsFilesTest extends TestCase
 {
     private string $papi_dir;
 
