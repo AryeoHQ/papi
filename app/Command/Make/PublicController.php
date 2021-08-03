@@ -33,7 +33,7 @@ class PublicController extends PapiController
             $public_customizations = [];
             if ($this->hasParam('p_path')) {
                 $public_customization_path = $this->getParam('p_path');
-                if ($public_customization_path && !PapiMethods::validPath($public_customization_path)) {
+                if ($public_customization_path && !PapiMethods::validFilePath($public_customization_path)) {
                     $this->printFileNotFound($public_customization_path);
                     return;
                 } else {
@@ -49,12 +49,12 @@ class PublicController extends PapiController
 
     public function preparePublicSpec($spec_path, $out_path, $overrides_path, $public_customizations)
     {
-        if (!PapiMethods::validPath($spec_path)) {
+        if (!PapiMethods::validFilePath($spec_path)) {
             $this->printFileNotFound($spec_path);
             return;
         }
 
-        if (!PapiMethods::validPath($overrides_path)) {
+        if (!PapiMethods::validFilePath($overrides_path)) {
             $this->printFileNotFound($overrides_path);
             return;
         }

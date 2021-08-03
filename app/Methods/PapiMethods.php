@@ -12,7 +12,7 @@ class PapiMethods
      * Files
      */
 
-    public static function validPath(string $path): bool
+    public static function validFilePath(string $path): bool
     {
         return !(empty($path) || !file_exists($path) || !is_file($path));
     }
