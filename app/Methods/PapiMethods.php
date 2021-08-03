@@ -402,13 +402,13 @@ class PapiMethods
                 return version_compare($a, $version_floor) >= 0 && version_compare($a, $version_ceiling) <= 0;
             } elseif ($include_floor && !$include_ceiling) {
                 return version_compare($a, $version_floor) >= 0 && version_compare($a, $version_ceiling) < 0;
-            } elseif ($include_ceiling && !$include_floor) {
+            } elseif (!$include_floor && $include_ceiling) {
                 return version_compare($a, $version_floor) > 0 && version_compare($a, $version_ceiling) <= 0;
             } else {
                 return version_compare($a, $version_floor) > 0 && version_compare($a, $version_ceiling) < 0;
             }
         });
 
-        return $filtered_versions;
+        return array_values($filtered_versions);
     }
 }
