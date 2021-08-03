@@ -289,6 +289,24 @@ class PapiController extends CommandController
             }
         }
 
-        return $proper_args && $proper_params;
+        $valid_format = ($this->getFormat() != '');
+
+        return $proper_args && $proper_params && $valid_format;
+    }
+
+    public function getFormat()
+    {
+        if ($this->hasParam('format')) {
+            $format = strtoupper($this->getParam('format') ?? '');
+            if ($format == 'JSON') {
+                return 'json';
+            } elseif ($format == 'YAML') {
+                return 'yaml';
+            } else {
+                return '';
+            }
+        } else {
+            return 'json';
+        }
     }
 }

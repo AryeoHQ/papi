@@ -22,7 +22,7 @@ if ($is_vendor_bin) {
 
 // ------------------------------------------
 
-require $root_app . '/vendor/autoload.php';
+require_once $root_app . '/vendor/autoload.php';
 
 use Minicli\App;
 use Minicli\Command\CommandCall;

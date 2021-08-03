@@ -13,6 +13,7 @@ class PublicController extends PapiController
         parent::boot($app);
         $this->description = 'make public api spec from a de-referenced spec';
         $this->parameters = [
+            ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['s_path', 'path to spec file', '/examples/out/PetStore/PetStore.MERGED.json', true],
             ['o_path', 'path to overrides JSON file', '/examples/overrides.json', true],
             ['out_path', 'write path for public api spec', '/examples/out/PetStore/PetStore.PUBLIC.json', true],
@@ -36,7 +37,7 @@ class PublicController extends PapiController
                     $this->printFileNotFound($public_customization_path);
                     return;
                 } else {
-                    $public_customizations = PapiMethods::readJsonFromFile($public_customization_path);
+                    $public_customizations = PapiMethods::readSpecFile($public_customization_path);
                 }
             }
 
@@ -58,35 +59,35 @@ class PublicController extends PapiController
             return;
         }
 
-        $json = PapiMethods::readJsonFromFile($spec_path);
-        $json = $this->removeInternalPaths($json);
-        $json = $this->removeUnreferencedTags($json);
-        $json = $this->makePathMethodAdjustments($json, $public_customizations);
-        $json = $this->applyPublicOverrides($json, $overrides_path);
+        $array = PapiMethods::readSpecFile($spec_path);
+        $array = $this->removeInternalPaths($array);
+        $array = $this->removeUnreferencedTags($array);
+        $array = $this->makePathMethodAdjustments($array, $public_customizations);
+        $array = $this->applyPublicOverrides($array, $overrides_path);
 
-        PapiMethods::writeJsonToFile($json, $out_path);
+        PapiMethods::writeSpecFile($array, $out_path, $this->getFormat());
     }
 
-    public function removeInternalPaths($json)
+    public function removeInternalPaths($array)
     {
         $valid_methods = ['get', 'head', 'post', 'put', 'delete', 'connect', 'options', 'trace', 'patch'];
 
-        if (isset($json['paths'])) {
+        if (isset($array['paths'])) {
             // for each path...
-            foreach ($json['paths'] as $path_key => $path) {
+            foreach ($array['paths'] as $path_key => $path) {
                 // for each method...
                 foreach ($path as $method_key => $method) {
                     if (in_array($method_key, $valid_methods, true)) {
                         if (isset($method['x-internal'])) {
                             if ($method['x-internal'] === true) {
-                                unset($json['paths'][$path_key][$method_key]);
+                                unset($array['paths'][$path_key][$method_key]);
                             }
                         }
                     }
                 }
 
-                // get updated json for path
-                $path = $json['paths'][$path_key];
+                // get updated content for path
+                $path = $array['paths'][$path_key];
 
                 // does path still have valid method?
                 $path_has_valid_method = false;
@@ -98,26 +99,26 @@ class PublicController extends PapiController
 
                 // if not, delete path
                 if (!$path_has_valid_method) {
-                    unset($json['paths'][$path_key]);
+                    unset($array['paths'][$path_key]);
                 }
             }
         }
 
-        return $json;
+        return $array;
     }
 
-    public function removeUnreferencedTags($json)
+    public function removeUnreferencedTags($array)
     {
         $tags_to_keep = [];
 
-        if (isset($json['paths']) && isset($json['tags'])) {
+        if (isset($array['paths']) && isset($array['tags'])) {
             // for each tag...
-            foreach ($json['tags'] as $tag) {
+            foreach ($array['tags'] as $tag) {
                 $tag_name = $tag['name'];
                 $keep_tag = false;
 
                 // for each path...
-                foreach ($json['paths'] as $path_key => $path) {
+                foreach ($array['paths'] as $path_key => $path) {
                     // for each method...
                     foreach ($path as $method_key => $method) {
                         // does method contain tag?
@@ -134,12 +135,12 @@ class PublicController extends PapiController
             }
         }
 
-        $json['tags'] = $tags_to_keep;
+        $array['tags'] = $tags_to_keep;
 
-        return $json;
+        return $array;
     }
 
-    public function makePathMethodAdjustments($json, $public_customizations)
+    public function makePathMethodAdjustments($array, $public_customizations)
     {
         // which path parameters should be stripped?
         $strip_path_parameters = [];
@@ -150,9 +151,9 @@ class PublicController extends PapiController
             }
         }
 
-        if (isset($json['paths'])) {
+        if (isset($array['paths'])) {
             // for each path...
-            foreach ($json['paths'] as $path_key => $path) {
+            foreach ($array['paths'] as $path_key => $path) {
                 // for each method...
                 foreach ($path as $method_key => $method) {
                     if ($method['parameters']) {
@@ -162,23 +163,23 @@ class PublicController extends PapiController
                                 $parameters_to_keep[] = $parameter;
                             }
                         }
-                        $json['paths'][$path_key][$method_key]['parameters'] = $parameters_to_keep;
+                        $array['paths'][$path_key][$method_key]['parameters'] = $parameters_to_keep;
                     }
                 }
             }
         }
 
-        return $json;
+        return $array;
     }
 
-    public function applyPublicOverrides($json, $overrides_path)
+    public function applyPublicOverrides($array, $overrides_path)
     {
-        $overrides = PapiMethods::readJsonFromFile($overrides_path);
+        $overrides = PapiMethods::readSpecFile($overrides_path);
 
         foreach ($overrides as $override_key => $override_value) {
-            $json = PapiMethods::setNestedValue($json, $override_key, $override_value);
+            $array = PapiMethods::setNestedValue($array, $override_key, $override_value);
         }
 
-        return $json;
+        return $array;
     }
 }

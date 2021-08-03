@@ -4,6 +4,7 @@ namespace App\Methods;
 
 use RecursiveArrayIterator;
 use RecursiveIteratorIterator;
+use Symfony\Component\Yaml\Yaml;
 
 class PapiMethods
 {
@@ -42,17 +43,34 @@ class PapiMethods
         return $result;
     }
 
-    public static function jsonFilesInDir($dir)
+    public static function validExtensions($format): array
+    {
+        if ($format == 'yaml') {
+            return ['yml', 'YML', 'yaml', 'YAML'];
+        } elseif ($format == 'json') {
+            return ['json', 'JSON'];
+        } else {
+            return [];
+        }
+    }
+
+    public static function validExtension($format, $extension)
+    {
+        return in_array($extension, PapiMethods::validExtensions($format));
+    }
+
+    public static function specFilesInDir(string $dir, string $format)
     {
         if (file_exists($dir) && is_dir($dir)) {
             $items = PapiMethods::scandirRecursively($dir);
-            
+     
             if ($items) {
-                return array_filter($items, function ($item) {
-                    if (is_dir($item) || pathinfo($item)['extension'] !== 'json') {
+                return array_filter($items, function ($item) use ($format) {
+                    $extension = pathinfo($item, PATHINFO_EXTENSION);
+                    if (is_dir($item) || !PapiMethods::validExtension($format, $extension)) {
                         return false;
                     } else {
-                        return strlen(''.basename($item, '.json')) > 0;
+                        return strlen(''.basename($item, '.'.$extension)) > 0;
                     }
                 });
             }
@@ -61,9 +79,10 @@ class PapiMethods
         return [];
     }
 
-    public static function specNameAndVersion($spec_file)
+    public static function specNameAndVersion($spec_file, $format)
     {
-        $file_name = ''.basename($spec_file, '.json');
+        $extension = pathinfo($spec_file, PATHINFO_EXTENSION);
+        $file_name = ''.basename($spec_file, '.'.$extension);
         $split_index = strpos($file_name, '.');
         $spec_name = substr($file_name, 0, $split_index);
         $spec_version = substr($file_name, $split_index + 1);
@@ -75,18 +94,34 @@ class PapiMethods
      * Reading and Writing
      */
 
-    public static function readJsonFromFile($file_path)
+    public static function readSpecFile($file_path)
     {
         if (realpath($file_path) && file_exists($file_path)) {
-            $json_string = file_get_contents($file_path);
+            $contents = file_get_contents($file_path);
+            $extension = strtoupper(pathinfo($file_path, PATHINFO_EXTENSION));
 
-            return json_decode($json_string, true);
+            if ($extension == 'JSON') {
+                return json_decode($contents, true);
+            } elseif ($extension == 'YAML' || $extension == 'YML') {
+                return Yaml::parse($contents);
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
     }
 
-    public static function writeJsonToFile($json, $file_path)
+    public static function writeSpecFile($array, $file_path, $format)
+    {
+        if ($format == 'json') {
+            PapiMethods::writeJsonSpecFile($array, $file_path);
+        } elseif ($format == 'yaml') {
+            PapiMethods::writeYamlSpecFile($array, $file_path);
+        }
+    }
+
+    private static function writeJsonSpecFile($array, $file_path)
     {
         // create write directory if DNE
         if (!file_exists(dirname($file_path))) {
@@ -95,11 +130,27 @@ class PapiMethods
 
         $file = fopen($file_path, 'w') or exit('Unable to open file!');
 
-        $json_str_indented_by_4 = json_encode($json, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        $json_str_indented_by_4 = json_encode($array, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         $json_str_indented_by_2 = preg_replace('/^(  +?)\\1(?=[^ ])/m', '$1', $json_str_indented_by_4);
 
         fwrite($file, $json_str_indented_by_2);
         fclose($file);
+    }
+
+    private static function writeYamlSpecFile($array, $file_path)
+    {
+        // create write directory if DNE
+        if (!file_exists(dirname($file_path))) {
+            mkdir(dirname($file_path), 0777, true);
+        }
+
+        $yaml_str = Yaml::dump(
+            $array,
+            10,
+            2,
+            Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK | Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE
+        );
+        file_put_contents($file_path, $yaml_str);
     }
 
     public static function writeTextToFile($text, $file_path)
@@ -178,13 +229,13 @@ class PapiMethods
         return join('.', array_slice($parts, 4));
     }
 
-    public static function matchingRouteKeys($a_json, $b_json)
+    public static function matchingRouteKeys($a_array, $b_array)
     {
-        $a_routes = PapiMethods::routesFromJson($a_json, true);
+        $a_routes = PapiMethods::routesFromArray($a_array, true);
 
         foreach ($a_routes as $route_key) {
             // is the route also in b?
-            if (PapiMethods::getNestedValue($b_json, $route_key)) {
+            if (PapiMethods::getNestedValue($b_array, $route_key)) {
                 yield $route_key;
             }
         }
@@ -199,14 +250,16 @@ class PapiMethods
         return $class_namespace.'\\'.$class_name;
     }
 
-    public static function models($models_dir)
+    public static function models($models_dir, $format)
     {
         $models = [];
 
-        foreach (PapiMethods::jsonFilesInDir($models_dir) as $model_file_name) {
+        foreach (PapiMethods::specFilesInDir($models_dir, $format) as $model_file_name) {
             $model_path = $models_dir . DIRECTORY_SEPARATOR . $model_file_name;
             $models_dir = basename(dirname($model_path));
-            $model_name = basename($model_path, '.json');
+
+            $extension = pathinfo($model_path, PATHINFO_EXTENSION);
+            $model_name = basename($model_path, '.'.$extension);
 
             $model_key = $models_dir.DIRECTORY_SEPARATOR.$model_name;
 
@@ -220,19 +273,19 @@ class PapiMethods
 
     public static function routes($spec_file_path)
     {
-        $json = PapiMethods::readJsonFromFile($spec_file_path);
-        return PapiMethods::routesFromJson($json);
+        $array = PapiMethods::readSpecFile($spec_file_path);
+        return PapiMethods::routesFromArray($array);
     }
 
-    public static function routesFromJson($json, $path_format = false)
+    public static function routesFromArray($array, $path_format = false)
     {
         $routes = [];
 
-        if (isset($json['paths'])) {
+        if (isset($array['paths'])) {
             $valid_methods = ['get', 'head', 'post', 'put', 'delete', 'connect', 'options', 'trace', 'patch'];
 
             // for each path...
-            foreach ($json['paths'] as $path_key => $path) {
+            foreach ($array['paths'] as $path_key => $path) {
                 // for each method...
                 foreach ($path as $method_key => $method) {
                     if (in_array($method_key, $valid_methods, true)) {
@@ -315,12 +368,13 @@ class PapiMethods
         return $final_spec_path;
     }
 
-    public static function versionsEqualToOrBelow($spec_dir, $version)
+    public static function versionsEqualToOrBelow($spec_dir, $version, $format)
     {
-        $spec_files = PapiMethods::jsonFilesInDir($spec_dir);
+        $spec_files = PapiMethods::specFilesInDir($spec_dir, $format);
 
         $spec_versions = array_map(function ($a) {
-            $base_name = basename($a, '.json');
+            $extension = pathinfo($a, PATHINFO_EXTENSION);
+            $base_name = basename($a, '.'.$extension);
 
             return substr($base_name, strpos($base_name, '.') + 1);
         }, $spec_files);
@@ -332,12 +386,13 @@ class PapiMethods
         return array_reverse($filtered_versions);
     }
 
-    public static function versionsBetween($spec_dir, $version_floor, $include_floor, $version_ceiling, $include_ceiling)
+    public static function versionsBetween($spec_dir, $version_floor, $include_floor, $version_ceiling, $include_ceiling, $format)
     {
-        $spec_files = PapiMethods::jsonFilesInDir($spec_dir);
+        $spec_files = PapiMethods::specFilesInDir($spec_dir, $format);
         
         $spec_versions = array_map(function ($a) {
-            $base_name = basename($a, '.json');
+            $extension = pathinfo($a, PATHINFO_EXTENSION);
+            $base_name = basename($a, '.'.$extension);
 
             return substr($base_name, strpos($base_name, '.') + 1);
         }, $spec_files);

@@ -13,6 +13,7 @@ class TestsController extends PapiController
         parent::boot($app);
         $this->description = 'make missing spec tests given an api spec';
         $this->parameters = [
+            ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['p_dir', 'project directory', '/examples/stubbed-laravel-project', true],
             ['s_dir', 'spec directory', '/examples/reference/PetStore', true],
             ['t_path', 'path to test template', '/examples/TemplateTest.php', true]
@@ -45,20 +46,20 @@ class TestsController extends PapiController
 
     public function determineMissingTestPaths($project_directory, $spec_dir)
     {
-        $spec_files = PapiMethods::jsonFilesInDir($spec_dir);
+        $format = $this->getFormat();
+        $spec_files = PapiMethods::specFilesInDir($spec_dir, $format);
 
         $required = [];
         $found = [];
 
         // for each spec...
         foreach ($spec_files as $spec_file) {
-            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
+            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file, $format);
 
-            $json_string = file_get_contents($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
-            $json = json_decode($json_string, true);
+            $array = PapiMethods::readSpecFile($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
 
             // for each path...
-            foreach ($json['paths'] as $path => $path_json) {
+            foreach ($array['paths'] as $path => $path_obj) {
                 $path_segments = PapiMethods::specPathToSegments($path);
                 $test_file_name = join('', $path_segments).'Test.php';
                 $test_file_path = PapiMethods::specTestDirectory($project_directory).DIRECTORY_SEPARATOR.$spec_name.'/v'.str_replace('-', '_', $spec_version).DIRECTORY_SEPARATOR.$test_file_name;
@@ -99,26 +100,26 @@ class TestsController extends PapiController
 
     public function fillMissingMethods($project_directory, $spec_dir)
     {
-        $spec_files = PapiMethods::jsonFilesInDir($spec_dir);
+        $format = $this->getFormat();
+        $spec_files = PapiMethods::specFilesInDir($spec_dir, $format);
 
         // for each spec...
         foreach ($spec_files as $spec_file) {
-            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
+            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file, $format);
 
-            $json_string = file_get_contents($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
-            $json = json_decode($json_string, true);
+            $array = PapiMethods::readSpecFile($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
 
             $valid_methods = ['get', 'head', 'post', 'put', 'delete', 'connect', 'options', 'trace', 'patch'];
 
             // for each path...
-            foreach ($json['paths'] as $path => $path_json) {
+            foreach ($array['paths'] as $path => $path_obj) {
                 $method_contents = [];
                 $class_fqn = PapiMethods::fullyQualifiedClassName($path, $spec_name, $spec_version);
 
                 // for each HTTP method...
-                foreach ($path_json as $method => $method_json) {
+                foreach ($path_obj as $method => $method_obj) {
                     if (in_array($method, $valid_methods, true)) {
-                        foreach ($method_json['responses'] as $status_code => $response_json) {
+                        foreach ($method_obj['responses'] as $status_code => $response_obj) {
                             if ($status_code >= 200 && $status_code <= 299) {
                                 $test_method_name = 'test'.ucfirst($method).$status_code;
 
