@@ -79,7 +79,7 @@ class PapiMethods
         return [];
     }
 
-    public static function specNameAndVersion($spec_file, $format)
+    public static function specNameAndVersion($spec_file)
     {
         $extension = pathinfo($spec_file, PATHINFO_EXTENSION);
         $file_name = ''.basename($spec_file, '.'.$extension);

@@ -54,7 +54,7 @@ class TestsController extends PapiController
 
         // for each spec...
         foreach ($spec_files as $spec_file) {
-            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file, $format);
+            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
 
             $array = PapiMethods::readSpecFile($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
 
@@ -105,7 +105,7 @@ class TestsController extends PapiController
 
         // for each spec...
         foreach ($spec_files as $spec_file) {
-            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file, $format);
+            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
 
             $array = PapiMethods::readSpecFile($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
 
