@@ -41,17 +41,17 @@ class SpecController extends PapiController
 
     public function cleanSpec($spec_file_path, $responses_path, $response_mappings_path)
     {
-        if (!PapiMethods::validPath($spec_file_path)) {
+        if (!PapiMethods::validFilePath($spec_file_path)) {
             $this->printFileNotFound($spec_file_path);
             return;
         }
 
-        if (!PapiMethods::validPath($responses_path)) {
+        if (!PapiMethods::validFilePath($responses_path)) {
             $this->printFileNotFound($responses_path);
             return;
         }
 
-        if (!PapiMethods::validPath($response_mappings_path)) {
+        if (!PapiMethods::validFilePath($response_mappings_path)) {
             $this->printFileNotFound($response_mappings_path);
             return;
         }

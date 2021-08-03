@@ -76,7 +76,7 @@ class DiffController extends PapiController
 
             foreach ($valid_extensions as $extension) {
                 $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_name . '.' . $version . '.' . $extension;
-                if (PapiMethods::validPath($spec_file_path)) {
+                if (PapiMethods::validFilePath($spec_file_path)) {
                     break;
                 }
             }

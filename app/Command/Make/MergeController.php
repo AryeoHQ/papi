@@ -50,7 +50,7 @@ class MergeController extends PapiController
         foreach ($valid_extensions as $extension) {
             $version_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $version . '.' . $extension;
 
-            if (PapiMethods::validPath($version_file_path)) {
+            if (PapiMethods::validFilePath($version_file_path)) {
                 $version_file_found = true;
                 break;
             }
@@ -76,7 +76,7 @@ class MergeController extends PapiController
 
             foreach ($valid_extensions as $extension) {
                 $spec_file_path = $spec_dir . DIRECTORY_SEPARATOR . $spec_prefix . '.' . $merge_version . '.' . $extension;
-                if (PapiMethods::validPath($spec_file_path)) {
+                if (PapiMethods::validFilePath($spec_file_path)) {
                     break;
                 }
             }

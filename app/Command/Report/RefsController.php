@@ -126,7 +126,7 @@ class RefsController extends PapiController
         foreach ($valid_extensions as $extension) {
             $current_path_check = $models_dir.DIRECTORY_SEPARATOR.$ref_version.DIRECTORY_SEPARATOR.$ref_name.'.'.$extension;
 
-            if (PapiMethods::validPath($current_path_check)) {
+            if (PapiMethods::validFilePath($current_path_check)) {
                 $current_file_exists = true;
                 break;
             }
@@ -153,7 +153,7 @@ class RefsController extends PapiController
             foreach ($valid_extensions as $extension) {
                 $ref_path_check = $models_dir.DIRECTORY_SEPARATOR.$version_to_check.DIRECTORY_SEPARATOR.$ref_name.'.'.$extension;
 
-                if (PapiMethods::validPath($ref_path_check)) {
+                if (PapiMethods::validFilePath($ref_path_check)) {
                     $newer_file_exists = true;
                     break;
                 }

@@ -12,7 +12,7 @@ class PapiMethods
      * Files
      */
 
-    public static function validPath(string $path): bool
+    public static function validFilePath(string $path): bool
     {
         return !(empty($path) || !file_exists($path) || !is_file($path));
     }
@@ -79,7 +79,7 @@ class PapiMethods
         return [];
     }
 
-    public static function specNameAndVersion($spec_file, $format)
+    public static function specNameAndVersion($spec_file)
     {
         $extension = pathinfo($spec_file, PATHINFO_EXTENSION);
         $file_name = ''.basename($spec_file, '.'.$extension);
@@ -91,12 +91,12 @@ class PapiMethods
     }
 
     /*
-     * Reading and Writing
+     * I/O
      */
 
     public static function readSpecFile($file_path)
     {
-        if (realpath($file_path) && file_exists($file_path)) {
+        if (file_exists($file_path)) {
             $contents = file_get_contents($file_path);
             $extension = strtoupper(pathinfo($file_path, PATHINFO_EXTENSION));
 
@@ -210,7 +210,7 @@ class PapiMethods
     }
 
     /*
-     * Miscellaneous
+     * Misc
      */
 
     public static function formatRouteKey($route_key)
@@ -402,13 +402,13 @@ class PapiMethods
                 return version_compare($a, $version_floor) >= 0 && version_compare($a, $version_ceiling) <= 0;
             } elseif ($include_floor && !$include_ceiling) {
                 return version_compare($a, $version_floor) >= 0 && version_compare($a, $version_ceiling) < 0;
-            } elseif ($include_ceiling && !$include_floor) {
+            } elseif (!$include_floor && $include_ceiling) {
                 return version_compare($a, $version_floor) > 0 && version_compare($a, $version_ceiling) <= 0;
             } else {
                 return version_compare($a, $version_floor) > 0 && version_compare($a, $version_ceiling) < 0;
             }
         });
 
-        return $filtered_versions;
+        return array_values($filtered_versions);
     }
 }

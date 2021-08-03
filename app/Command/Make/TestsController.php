@@ -54,7 +54,7 @@ class TestsController extends PapiController
 
         // for each spec...
         foreach ($spec_files as $spec_file) {
-            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file, $format);
+            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
 
             $array = PapiMethods::readSpecFile($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
 
@@ -64,7 +64,7 @@ class TestsController extends PapiController
                 $test_file_name = join('', $path_segments).'Test.php';
                 $test_file_path = PapiMethods::specTestDirectory($project_directory).DIRECTORY_SEPARATOR.$spec_name.'/v'.str_replace('-', '_', $spec_version).DIRECTORY_SEPARATOR.$test_file_name;
                 $required[] = $test_file_path;
-                if (realpath($test_file_path)) {
+                if (file_exists($test_file_path)) {
                     $found[] = $test_file_path;
                 }
             }
@@ -105,7 +105,7 @@ class TestsController extends PapiController
 
         // for each spec...
         foreach ($spec_files as $spec_file) {
-            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file, $format);
+            [$spec_name, $spec_version] = PapiMethods::specNameAndVersion($spec_file);
 
             $array = PapiMethods::readSpecFile($spec_dir.DIRECTORY_SEPARATOR.$spec_file);
 
