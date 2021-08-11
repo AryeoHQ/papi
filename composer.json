@@ -34,7 +34,7 @@
     }
   },
   "require": {
-    "php": "^7.4",
+    "php": "^8.0",
     "minicli/minicli": "^2.0",
     "symfony/yaml": "^5.3"
   },
