@@ -356,8 +356,8 @@ class SafeController extends PapiController
             $last_route = PapiMethods::getNestedValue($last_array, $route_key);
             $current_route = PapiMethods::getNestedValue($current_array, $route_key);
 
-            $last_route_schema = $last_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_route['description'], 'properties' => []];
-            $current_route_schema = $current_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_route['description'], 'properties' => []];
+            $last_route_schema = $last_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $route_key, 'properties' => []];
+            $current_route_schema = $current_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $route_key, 'properties' => []];
 
             // are the request body property types the same?
             $diff_errors = $this->schemaPropertyTypeDiff(
