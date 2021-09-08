@@ -17,3 +17,11 @@ composer require aryeo/papi --dev
 # show all commands
 ./vendor/bin/papi help
 ```
+
+# Contributing
+
+## Running Tests
+
+```bash
+./vendor/bin/phpunit
+```

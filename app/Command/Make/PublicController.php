@@ -122,8 +122,10 @@ class PublicController extends PapiController
                     // for each method...
                     foreach ($path as $method_key => $method) {
                         // does method contain tag?
-                        if ($method['tags'] && in_array($tag_name, $method['tags'], true)) {
-                            $keep_tag = true;
+                        if (isset($method['tags'])) {
+                            if ($method['tags'] && in_array($tag_name, $method['tags'], true)) {
+                                $keep_tag = true;
+                            }
                         }
                     }
                 }
@@ -156,14 +158,18 @@ class PublicController extends PapiController
             foreach ($array['paths'] as $path_key => $path) {
                 // for each method...
                 foreach ($path as $method_key => $method) {
-                    if ($method['parameters']) {
-                        $parameters_to_keep = [];
-                        foreach ($method['parameters'] as $parameter) {
-                            if (!in_array($parameter['name'], $strip_path_parameters)) {
-                                $parameters_to_keep[] = $parameter;
+                    if (isset($method['parameters'])) {
+                        if ($method['parameters']) {
+                            $parameters_to_keep = [];
+                            foreach ($method['parameters'] as $parameter) {
+                                if (isset($parameter['name'])) {
+                                    if (!in_array($parameter['name'], $strip_path_parameters)) {
+                                        $parameters_to_keep[] = $parameter;
+                                    }
+                                }
                             }
+                            $array['paths'][$path_key][$method_key]['parameters'] = $parameters_to_keep;
                         }
-                        $array['paths'][$path_key][$method_key]['parameters'] = $parameters_to_keep;
                     }
                 }
             }
