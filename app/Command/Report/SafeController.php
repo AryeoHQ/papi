@@ -54,8 +54,15 @@ class SafeController extends PapiController
             exit(-1);
         }
 
-        $last_array_version = $last_array['info']['version'];
-        $current_array_version = $current_array['info']['version'];
+        $last_array_version = '';
+        if (isset($last_array['info'])) {
+            $last_array_version = $last_array['info']['version'];
+        }
+
+        $current_array_version = '';
+        if (isset($current_array['info'])) {
+            $current_array['info']['version'];
+        }
 
         if ($last_array_version !== $current_array_version) {
             $this->safetyHeader();
