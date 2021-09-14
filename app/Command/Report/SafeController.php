@@ -61,7 +61,7 @@ class SafeController extends PapiController
 
         $current_array_version = '';
         if (isset($current_array['info'])) {
-            $current_array['info']['version'];
+            $current_array_version = $current_array['info']['version'];
         }
 
         if ($last_array_version !== $current_array_version) {
