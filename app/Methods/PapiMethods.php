@@ -376,7 +376,7 @@ class PapiMethods
 
     public static function operationsKeys($spec_file_path)
     {
-        $array = PapiMethods::readSpecFile($spec_file_path);
+        $array = PapiMethods::readSpecFileToOpenApi($spec_file_path);
         return PapiMethods::operationKeysFromOpenApi($array);
     }
 

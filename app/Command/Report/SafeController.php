@@ -87,8 +87,8 @@ class SafeController extends PapiController
 
         // // optionality...
         $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkQueryParameterNowRequired($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkHeaderNowRequired($last_open_api, $current_open_api);
+        $section_results[] = $this->checkQueryParameterNowRequired($last_open_api, $current_open_api);
+        $section_results[] = $this->checkHeaderNowRequired($last_open_api, $current_open_api);
 
         // display results and exit accordingly...
         if ($this->displaySectionResultsWithErrors($section_results)) {
@@ -541,7 +541,7 @@ class SafeController extends PapiController
                 $current_open_api,
                 $operation_key,
                 'query',
-                '[required]'
+                'required'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -561,7 +561,7 @@ class SafeController extends PapiController
                 $current_open_api,
                 $operation_key,
                 'header',
-                '[required]'
+                'required'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -780,24 +780,17 @@ class SafeController extends PapiController
         $errors = [];
 
         // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_operation_params = $this->operationParameters($a_open_api, $operation_key, $param_in, $param_value_key);
-        $b_operation_params = $this->operationParameters($b_open_api, $operation_key, $param_in, $param_value_key);
+        $a_operation_params = $this->operationParameterProp($a_open_api, $operation_key, $param_in, $param_value_key);
+        $b_operation_params = $this->operationParameterProp($b_open_api, $operation_key, $param_in, $param_value_key);
 
-        // for each param...
-        foreach ($a_operation_params as $a_operation_param_key => $a_operation_param_value) {
-            if (isset($b_operation_params[$a_operation_param_key])) {
-                $b_operation_param_value = $b_operation_params[$a_operation_param_key];
+        $diff = array_diff($a_operation_params, $b_operation_params);
 
-                if ($b_operation_param_value) {
-                    if (!$a_operation_param_value && $b_operation_param_value) {
-                        $errors[] = sprintf(
-                            '%s: New required parameter `%s`.',
-                            PapiMethods::formatOperationKey($operation_key),
-                            $a_operation_param_key,
-                        );
-                    }
-                }
-            }
+        if (count($diff) > 0) {
+            $errors[] = sprintf(
+                '%s: New required parameter `%s`.',
+                PapiMethods::formatOperationKey($operation_key),
+                join(', ', array_keys($diff))
+            );
         }
 
         return $errors;
@@ -828,6 +821,17 @@ class SafeController extends PapiController
 
 
         return $operation_parameters;
+    }
+
+    public function operationParameterProp($open_api, $operation_key, $parameter_type, $schema_value_key)
+    {
+        $operation_schema_parameters = [];
+
+        foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
+            $operation_schema_parameters[$parameter->name] = $parameter->__get($schema_value_key);
+        }
+
+        return $operation_schema_parameters;
     }
 
     public function operationSchemaParameters($open_api, $operation_key, $parameter_type, $schema_value_key)

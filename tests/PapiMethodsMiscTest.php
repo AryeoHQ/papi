@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Methods\PapiMethods;
+use cebe\openapi\spec\OpenApi;
 use PHPUnit\Framework\TestCase;
 
 class PapiMethodsMiscTest extends TestCase
@@ -40,7 +41,12 @@ class PapiMethodsMiscTest extends TestCase
 
     public function testMatchingOperationKeys()
     {
-        $array_a = [
+        $openapi_a = new OpenApi([
+            'openapi' => '3.0.2',
+            'info' => [
+                'title' => 'Test API',
+                'version' => '1.0.0',
+            ],
             'paths' => [
                 '/hello' => [
                     'get' => [
@@ -48,9 +54,14 @@ class PapiMethodsMiscTest extends TestCase
                     ]
                 ]
             ]
-        ];
+        ]);
 
-        $array_b = [
+        $openapi_b = new OpenApi([
+            'openapi' => '3.0.2',
+            'info' => [
+                'title' => 'Test API',
+                'version' => '1.0.0',
+            ],
             'paths' => [
                 '/hello' => [
                     'get' => [
@@ -63,11 +74,11 @@ class PapiMethodsMiscTest extends TestCase
                     ]
                 ]
             ]
-        ];
-
+        ]);
+        
         $results = [];
 
-        foreach (PapiMethods::matchingOperationKeys($array_a, $array_b) as $index => $result) {
+        foreach (PapiMethods::matchingOperationKeys($openapi_a, $openapi_b) as $index => $result) {
             $results[] = $result;
         }
 
@@ -118,9 +129,14 @@ class PapiMethodsMiscTest extends TestCase
         $this->assertNotContains('GET /listing', $results);
     }
 
-    public function testOperationsFromArray()
+    public function testOperationsFromOpenApi()
     {
-        $array = [
+        $openapi = new OpenApi([
+            'openapi' => '3.0.2',
+            'info' => [
+                'title' => 'Test API',
+                'version' => '1.0.0',
+            ],
             'paths' => [
                 '/hello' => [
                     'get' => [
@@ -133,9 +149,9 @@ class PapiMethodsMiscTest extends TestCase
                     ]
                 ]
             ]
-        ];
+        ]);
 
-        $results = PapiMethods::operationsFromArray($array);
+        $results = PapiMethods::operationKeysFromOpenApi($openapi);
 
         $this->assertCount(2, $results);
         $this->assertContains('GET /hello', $results);
