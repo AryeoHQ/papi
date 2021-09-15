@@ -80,9 +80,9 @@ class SafeController extends PapiController
 
         // type changes...
         $section_results[] = $this->checkResponsePropertyTypeChanged($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkQueryParameterTypeChanged($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkHeaderTypeChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkQueryParameterTypeChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkHeaderTypeChanged($last_open_api, $current_open_api);
         // $section_results[] = $this->checkEnumsChanged($last_open_api, $current_open_api);
 
         // // optionality...
@@ -354,11 +354,11 @@ class SafeController extends PapiController
 
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
-            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
-            $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
+            $last_operation_request_body = PapiMethods::getOperationRequestBody($last_open_api, $operation_key);
+            $current_operation_request_body = PapiMethods::getOperationRequestBody($current_open_api, $operation_key);
 
-            $last_operation_schema = $last_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $operation_key, 'properties' => []];
-            $current_operation_schema = $current_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $operation_key, 'properties' => []];
+            $last_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($last_operation_request_body);
+            $current_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($current_operation_request_body);
 
             // are the request body property types the same?
             $diff_errors = $this->schemaPropertyTypeDiff(
@@ -381,12 +381,12 @@ class SafeController extends PapiController
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // are the query parameter types the same?
-            $diff_errors = $this->operationParametersTypeDiff(
+            $diff_errors = $this->operationParametersSchemaDiff(
                 $last_open_api,
                 $current_open_api,
                 $operation_key,
                 'query',
-                '[schema][type]'
+                'type'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -402,12 +402,12 @@ class SafeController extends PapiController
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // are the header types the same?
-            $diff_errors = $this->operationParametersTypeDiff(
+            $diff_errors = $this->operationParametersSchemaDiff(
                 $last_open_api,
                 $current_open_api,
                 $operation_key,
                 'header',
-                '[schema][type]'
+                'type'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -730,14 +730,14 @@ class SafeController extends PapiController
         }
     }
 
-    public function operationParametersTypeDiff($a_open_api, $b_open_api, $operation_key, $param_in, $param_value_key)
+    public function operationParametersSchemaDiff($a_open_api, $b_open_api, $operation_key, $param_in, $schema_value_key)
     {
         $errors = [];
 
         // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_operation_params = $this->operationParameters($a_open_api, $operation_key, $param_in, $param_value_key);
-        $b_operation_params = $this->operationParameters($b_open_api, $operation_key, $param_in, $param_value_key);
-
+        $a_operation_params = $this->operationSchemaParameters($a_open_api, $operation_key, $param_in, $schema_value_key);
+        $b_operation_params = $this->operationSchemaParameters($b_open_api, $operation_key, $param_in, $schema_value_key);
+        
         // for each param...
         foreach ($a_operation_params as $a_operation_param_key => $a_operation_param_value) {
             if (isset($b_operation_params[$a_operation_param_key])) {
@@ -788,24 +788,42 @@ class SafeController extends PapiController
         return $errors;
     }
 
-    public function operationParameters($open_api, $operation_key, $parameter_type, $parameter_value_key)
+    public function operationParametersForType($open_api, $operation_key, $parameter_type)
     {
-        $operation_parameters = [];
         $operation = PapiMethods::getOperation($open_api, $operation_key);
 
         $operation_all_parameters = $operation->parameters;
         if ($operation_all_parameters) {
-            $operation_matching_parameters = array_filter($operation_all_parameters, function ($operation_parameter) use ($parameter_type) {
+            return array_filter($operation_all_parameters, function ($operation_parameter) use ($parameter_type) {
                 return $operation_parameter->in === $parameter_type;
             });
+        } else {
+            return [];
+        }
+    }
 
-            foreach ($operation_matching_parameters as $parameter) {
-                $parameter_object = PapiMethods::objectToArray($parameter);
-                $operation_parameters[$parameter->name] = PapiMethods::getNestedValue($parameter_object, $parameter_value_key);
-            }
+    public function operationParameters($open_api, $operation_key, $parameter_type, $parameter_value_key)
+    {
+        $operation_parameters = [];
+        
+        foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
+            $parameter_object = PapiMethods::objectToArray($parameter);
+            $operation_parameters[$parameter->name] = PapiMethods::getNestedValue($parameter_object, $parameter_value_key);
         }
 
+
         return $operation_parameters;
+    }
+
+    public function operationSchemaParameters($open_api, $operation_key, $parameter_type, $schema_value_key)
+    {
+        $operation_schema_parameters = [];
+        
+        foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
+            $operation_schema_parameters[$parameter->name] = $parameter->schema->__get($schema_value_key);
+        }
+
+        return $operation_schema_parameters;
     }
 
     public function operationDiff($a_open_api, $b_open_api, $on_property, $subject)
