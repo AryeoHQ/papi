@@ -21,7 +21,7 @@ class MergeController extends PapiController
         ];
         $this->notes = [
             'When API versions are merged together, the most recent version of',
-            'each named route and method combination are used.',
+            'each named operation and method combination are used.',
         ];
     }
 
