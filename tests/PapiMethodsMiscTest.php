@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Methods\PapiMethods;
+use cebe\openapi\spec\OpenApi;
 use PHPUnit\Framework\TestCase;
 
 class PapiMethodsMiscTest extends TestCase
@@ -15,16 +16,16 @@ class PapiMethodsMiscTest extends TestCase
         $this->papi_dir = getcwd();
     }
 
-    public function testFormatRouteKey()
+    public function testFormatOperationKey()
     {
         $this->assertEquals(
             'GET /hello',
-            PapiMethods::formatRouteKey('[paths][/hello][get]')
+            PapiMethods::formatOperationKey('[paths][/hello][get]')
         );
 
         $this->assertEquals(
             'GET /disc/{disc_id}',
-            PapiMethods::formatRouteKey('[paths][/disc/{disc_id}][get]')
+            PapiMethods::formatOperationKey('[paths][/disc/{disc_id}][get]')
         );
     }
 
@@ -38,9 +39,14 @@ class PapiMethodsMiscTest extends TestCase
         );
     }
 
-    public function testMatchingRouteKeys()
+    public function testMatchingOperationKeys()
     {
-        $array_a = [
+        $openapi_a = new OpenApi([
+            'openapi' => '3.0.2',
+            'info' => [
+                'title' => 'Test API',
+                'version' => '1.0.0',
+            ],
             'paths' => [
                 '/hello' => [
                     'get' => [
@@ -48,9 +54,14 @@ class PapiMethodsMiscTest extends TestCase
                     ]
                 ]
             ]
-        ];
+        ]);
 
-        $array_b = [
+        $openapi_b = new OpenApi([
+            'openapi' => '3.0.2',
+            'info' => [
+                'title' => 'Test API',
+                'version' => '1.0.0',
+            ],
             'paths' => [
                 '/hello' => [
                     'get' => [
@@ -63,11 +74,11 @@ class PapiMethodsMiscTest extends TestCase
                     ]
                 ]
             ]
-        ];
-
+        ]);
+        
         $results = [];
 
-        foreach (PapiMethods::matchingRouteKeys($array_a, $array_b) as $index => $result) {
+        foreach (PapiMethods::matchingOperationKeys($openapi_a, $openapi_b) as $index => $result) {
             $results[] = $result;
         }
 
@@ -107,20 +118,25 @@ class PapiMethodsMiscTest extends TestCase
         $this->assertNotContains('2021-07-24/Order', $results);
     }
 
-    public function testRoutes()
+    public function testOperations()
     {
         $spec_file = $this->papi_dir.'/examples/reference/PetStore/PetStore.2021-07-23.json';
 
-        $results = PapiMethods::routes($spec_file);
+        $results = PapiMethods::operationsKeys($spec_file);
 
         $this->assertCount(19, $results);
         $this->assertContains('PUT /pet', $results);
         $this->assertNotContains('GET /listing', $results);
     }
 
-    public function testRoutesFromArray()
+    public function testOperationsFromOpenApi()
     {
-        $array = [
+        $openapi = new OpenApi([
+            'openapi' => '3.0.2',
+            'info' => [
+                'title' => 'Test API',
+                'version' => '1.0.0',
+            ],
             'paths' => [
                 '/hello' => [
                     'get' => [
@@ -133,9 +149,9 @@ class PapiMethodsMiscTest extends TestCase
                     ]
                 ]
             ]
-        ];
+        ]);
 
-        $results = PapiMethods::routesFromArray($array);
+        $results = PapiMethods::operationKeysFromOpenApi($openapi);
 
         $this->assertCount(2, $results);
         $this->assertContains('GET /hello', $results);

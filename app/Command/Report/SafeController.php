@@ -34,19 +34,19 @@ class SafeController extends PapiController
 
     public function checkSpecs($current_spec_path, $last_spec_path)
     {
-        $last_array = PapiMethods::readSpecFile($last_spec_path);
-
-        if ($last_array === false) {
+        // open last api spec
+        $last_open_api = PapiMethods::readSpecFileToOpenApi($last_spec_path);
+        if ($last_open_api === null) {
             $this->safetyHeader();
             $this->getPrinter()->out('👎 FAIL: Unable to open last spec.', 'error');
             $this->getPrinter()->newline();
             $this->getPrinter()->newline();
             exit(-1);
         }
-
-        $current_array = PapiMethods::readSpecFile($current_spec_path);
-
-        if ($last_array === false) {
+        
+        // open current api spec
+        $current_open_api = PapiMethods::readSpecFileToOpenApi($current_spec_path);
+        if ($current_open_api === null) {
             $this->safetyHeader();
             $this->getPrinter()->out('👎 FAIL: Unable to open current spec.', 'error');
             $this->getPrinter()->newline();
@@ -54,17 +54,8 @@ class SafeController extends PapiController
             exit(-1);
         }
 
-        $last_array_version = '';
-        if (isset($last_array['info'])) {
-            $last_array_version = $last_array['info']['version'];
-        }
-
-        $current_array_version = '';
-        if (isset($current_array['info'])) {
-            $current_array_version = $current_array['info']['version'];
-        }
-
-        if ($last_array_version !== $current_array_version) {
+        // ensure we are checking specs with same version
+        if ($last_open_api->info->version !== $current_open_api->info->version) {
             $this->safetyHeader();
             $this->getPrinter()->rawOutput('Specs being compared are not the same version. Exiting quietly.', 'error');
             $this->getPrinter()->newline();
@@ -75,29 +66,29 @@ class SafeController extends PapiController
         $section_results = [];
 
         // additions...
-        $section_results[] = $this->checkRouteSecurityAdditions($last_array, $current_array);
+        $section_results[] = $this->checkOperationSecurityAdditions($last_open_api, $current_open_api);
 
         // removals...
-        $section_results[] = $this->checkResponsePropertyRemovals($last_array, $current_array);
-        $section_results[] = $this->checkRequestBodyPropertyRemovals($last_array, $current_array);
-        $section_results[] = $this->checkRouteMethodDirectRemovals($last_array, $current_array);
-        $section_results[] = $this->checkRouteMethodDeprecatedRemovals($last_array, $current_array);
-        $section_results[] = $this->checkRouteMethodInternalRemovals($last_array, $current_array);
-        $section_results[] = $this->checkResponseRemovals($last_array, $current_array);
-        $section_results[] = $this->checkQueryParamRemovals($last_array, $current_array);
-        $section_results[] = $this->checkHeaderRemovals($last_array, $current_array);
+        $section_results[] = $this->checkResponsePropertyRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkRequestBodyPropertyRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkOperationMethodDirectRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkOperationMethodDeprecatedRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkOperationMethodInternalRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkResponseRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkQueryParamRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkHeaderRemovals($last_open_api, $current_open_api);
 
         // type changes...
-        $section_results[] = $this->checkResponsePropertyTypeChanged($last_array, $current_array);
-        $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_array, $current_array);
-        $section_results[] = $this->checkQueryParameterTypeChanged($last_array, $current_array);
-        $section_results[] = $this->checkHeaderTypeChanged($last_array, $current_array);
-        $section_results[] = $this->checkEnumsChanged($last_array, $current_array);
+        $section_results[] = $this->checkResponsePropertyTypeChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkQueryParameterTypeChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkHeaderTypeChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkEnumsChanged($last_open_api, $current_open_api);
 
-        // optionality...
-        $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_array, $current_array);
-        $section_results[] = $this->checkQueryParameterNowRequired($last_array, $current_array);
-        $section_results[] = $this->checkHeaderNowRequired($last_array, $current_array);
+        // // optionality...
+        $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api);
+        $section_results[] = $this->checkQueryParameterNowRequired($last_open_api, $current_open_api);
+        $section_results[] = $this->checkHeaderNowRequired($last_open_api, $current_open_api);
 
         // display results and exit accordingly...
         if ($this->displaySectionResultsWithErrors($section_results)) {
@@ -117,71 +108,75 @@ class SafeController extends PapiController
      * Additions
      */
 
-    public function checkRouteSecurityAdditions($last_array, $current_array)
+    public function checkOperationSecurityAdditions($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route = PapiMethods::getNestedValue($last_array, $route_key);
-            $current_route = PapiMethods::getNestedValue($current_array, $route_key);
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
 
             // is the security the same?
-            $last_route_security = [];
-            if (isset($last_route['security'])) {
-                foreach ($last_route['security'] as $security_object) {
-                    $last_route_security[] = array_keys($security_object)[0];
-                }
-            }
-            $current_route_security = [];
-            if (isset($current_route['security'])) {
-                foreach ($current_route['security'] as $security_object) {
-                    $current_route_security[] = array_keys($security_object)[0];
+            $last_operation_security = [];
+            if ($last_operation->security) {
+                foreach ($last_operation->security as $security_object) {
+                    foreach ($security_object->getSerializableData() as $security_key => $value) {
+                        $last_operation_security[] = $security_key;
+                    }
                 }
             }
 
-            $diff = array_diff($current_route_security, $last_route_security);
+
+            $current_operation_security = [];
+            if ($current_operation->security) {
+                foreach ($current_operation->security as $security_object) {
+                    foreach ($security_object->getSerializableData() as $security_key => $value) {
+                        $current_operation_security[] = $security_key;
+                    }
+                }
+            }
+
+            $diff = array_diff($current_operation_security, $last_operation_security);
 
             if (count($diff) > 0) {
                 $new_schemes = array_values($diff);
                 $errors[] = sprintf(
-                    '%s: `%s` security has been added to this route.',
-                    PapiMethods::formatRouteKey($route_key),
+                    '%s: `%s` security has been added to this operation.',
+                    PapiMethods::formatOperationKey($operation_key),
                     join(', ', $new_schemes)
                 );
             }
         }
 
-        return new SectionResults('Route Security Additions', $errors);
+        return new SectionResults('Operation Security Additions', $errors);
     }
 
     /*
      * Removals
      */
 
-    public function checkResponsePropertyRemovals($last_array, $current_array)
+    public function checkResponsePropertyRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route = PapiMethods::getNestedValue($last_array, $route_key);
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $last_responses = $last_operation->responses;
 
             // for each response...
-            if (isset($last_route['responses'])) {
-                foreach ($last_route['responses'] as $status_code => $last_route_response) {
-                    $current_route_response = PapiMethods::getNestedValue($current_array, $route_key.'[responses]'.'['.$status_code.']');
+            if (count($last_responses) > 0) {
+                foreach ($last_responses as $status_code => $last_operation_response) {
+                    $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
                     // does the current spec have a response for this status code?
-                    if ($current_route_response) {
-                        $last_route_schema = $last_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_route_response['description'], 'properties' => []];
-                        $current_route_schema = $current_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_route_response['description'], 'properties' => []];
-
+                    if ($current_operation_response) {
                         // are the properties the same?
                         $error = $this->schemaDiff(
-                            $last_route_schema,
-                            $current_route_schema,
-                            PapiMethods::formatRouteKey($route_key),
+                            PapiMethods::getSchemaArrayFromSpecObject($last_operation_response),
+                            PapiMethods::getSchemaArrayFromSpecObject($current_operation_response),
+                            PapiMethods::formatOperationKey($operation_key),
                             $status_code
                         );
 
@@ -196,23 +191,22 @@ class SafeController extends PapiController
         return new SectionResults('Response Property Removals', $errors);
     }
 
-    public function checkRequestBodyPropertyRemovals($last_array, $current_array)
+    public function checkRequestBodyPropertyRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route_request_body = PapiMethods::getNestedValue($last_array, $route_key.'[requestBody]');
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation_request_body = PapiMethods::getOperationRequestBody($last_open_api, $operation_key);
 
             // was there a request body in last spec?
-            if ($last_route_request_body) {
-                $current_route_request_body = PapiMethods::getNestedValue($current_array, $route_key.'[requestBody]');
-
+            if ($last_operation_request_body) {
+                $current_operation_request_body = PapiMethods::getOperationRequestBody($current_open_api, $operation_key);
                 // if so, has it changed?
                 $error = $this->schemaDiff(
-                    $last_route_request_body['content']['application/json']['schema'],
-                    $current_route_request_body['content']['application/json']['schema'],
-                    PapiMethods::formatRouteKey($route_key),
+                    PapiMethods::getSchemaArrayFromSpecObject($last_operation_request_body),
+                    PapiMethods::getSchemaArrayFromSpecObject($current_operation_request_body),
+                    PapiMethods::formatOperationKey($operation_key),
                     'Request Body'
                 );
 
@@ -225,57 +219,57 @@ class SafeController extends PapiController
         return new SectionResults('Request Body Property Removals', $errors);
     }
 
-    public function checkRouteMethodDirectRemovals($last_array, $current_array)
+    public function checkOperationMethodDirectRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        $last_route_keys = array_keys(PapiMethods::routesFromArray($last_array, true));
-        $current_route_keys = array_keys(PapiMethods::routesFromArray($current_array, true));
+        $last_operation_keys = array_keys(PapiMethods::operationKeysFromOpenApi($last_open_api, true));
+        $current_operation_keys = array_keys(PapiMethods::operationKeysFromOpenApi($current_open_api, true));
 
-        $diff = array_diff($last_route_keys, $current_route_keys);
+        $diff = array_diff($last_operation_keys, $current_operation_keys);
 
         if (count($diff) > 0) {
-            foreach ($diff as $route_key) {
-                $errors[] = sprintf('%s: This route has been removed.', PapiMethods::formatRouteKey($route_key));
+            foreach ($diff as $operation_key) {
+                $errors[] = sprintf('%s: This operation has been removed.', PapiMethods::formatOperationKey($operation_key));
             }
         }
 
-        return new SectionResults('Route Removals', $errors);
+        return new SectionResults('Operation Removals', $errors);
     }
 
-    public function checkRouteMethodDeprecatedRemovals($last_array, $current_array)
+    public function checkOperationMethodDeprecatedRemovals($last_open_api, $current_open_api)
     {
-        $errors = $this->routeDiff($last_array, $current_array, 'deprecated', 'deprecated');
+        $errors = $this->operationDiff($last_open_api, $current_open_api, 'deprecated', 'deprecated');
 
-        return new SectionResults('Routes Marked Deprecated', $errors);
+        return new SectionResults('Operations Marked Deprecated', $errors);
     }
 
-    public function checkRouteMethodInternalRemovals($last_array, $current_array)
+    public function checkOperationMethodInternalRemovals($last_open_api, $current_open_api)
     {
-        $errors = $this->routeDiff($last_array, $current_array, 'x-internal', 'internal');
+        $errors = $this->operationDiff($last_open_api, $current_open_api, 'x-internal', 'internal');
 
-        return new SectionResults('Routes Marked Internal', $errors);
+        return new SectionResults('Operations Marked Internal', $errors);
     }
 
-    public function checkResponseRemovals($last_array, $current_array)
+    public function checkResponseRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route_responses = PapiMethods::getNestedValue($last_array, $route_key.'[responses]');
-            $last_route_codes = array_keys($last_route_responses);
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation_responses = PapiMethods::getOperation($last_open_api, $operation_key)->responses;
+            $last_operation_codes = array_keys(PapiMethods::objectToArray($last_operation_responses));
 
-            $current_route_responses = PapiMethods::getNestedValue($current_array, $route_key.'[responses]');
-            $current_route_codes = array_keys($current_route_responses);
+            $current_operation_responses = PapiMethods::getOperation($current_open_api, $operation_key)->responses;
+            $current_operation_codes = array_keys(PapiMethods::objectToArray($current_operation_responses));
 
-            $diff = array_diff($last_route_codes, $current_route_codes);
+            $diff = array_diff($last_operation_codes, $current_operation_codes);
 
             if (count($diff) > 0) {
                 foreach ($diff as $status_code) {
                     $errors[] = sprintf(
                         '%s (%s): This response has been removed.',
-                        PapiMethods::formatRouteKey($route_key),
+                        PapiMethods::formatOperationKey($operation_key),
                         $status_code,
                     );
                 }
@@ -285,14 +279,14 @@ class SafeController extends PapiController
         return new SectionResults('Response Removals', $errors);
     }
 
-    public function checkQueryParamRemovals($last_array, $current_array)
+    public function checkQueryParamRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // do the query parameters match?
-            $error = $this->routeParametersDiff($last_array, $current_array, $route_key, 'query');
+            $error = $this->operationParametersDiff($last_open_api, $current_open_api, $operation_key, 'query');
             if ($error) {
                 $errors[] = $error;
             }
@@ -301,14 +295,14 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Removals', $errors);
     }
 
-    public function checkHeaderRemovals($last_array, $current_array)
+    public function checkHeaderRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // do the headers match?
-            $error = $this->routeParametersDiff($last_array, $current_array, $route_key, 'header');
+            $error = $this->operationParametersDiff($last_open_api, $current_open_api, $operation_key, 'header');
             if ($error) {
                 $errors[] = $error;
             }
@@ -321,28 +315,28 @@ class SafeController extends PapiController
      * Type Changes
      */
 
-    public function checkResponsePropertyTypeChanged($last_array, $current_array)
+    public function checkResponsePropertyTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route = PapiMethods::getNestedValue($last_array, $route_key);
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
 
             // for each response...
-            foreach ($last_route['responses'] as $status_code => $last_route_response) {
-                $current_route_response = PapiMethods::getNestedValue($current_array, $route_key.'[responses]'.'['.$status_code.']');
+            foreach ($last_operation->responses as $status_code => $last_operation_response) {
+                $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
                 // does the current spec have a response for this status code?
-                if ($current_route_response) {
-                    $last_route_schema = $last_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_route_response['description'], 'properties' => []];
-                    $current_route_schema = $current_route_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_route_response['description'], 'properties' => []];
+                if ($current_operation_response) {
+                    $last_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($last_operation_response);
+                    $current_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($current_operation_response);
 
                     // are the types the same?
                     $diff_errors = $this->schemaPropertyTypeDiff(
-                        $last_route_schema,
-                        $current_route_schema,
-                        PapiMethods::formatRouteKey($route_key),
+                        $last_operation_schema,
+                        $current_operation_schema,
+                        PapiMethods::formatOperationKey($operation_key),
                         $status_code
                     );
 
@@ -354,23 +348,23 @@ class SafeController extends PapiController
         return new SectionResults('Response Property Type Changes', $errors);
     }
 
-    public function checkRequestBodyPropertyTypeChanged($last_array, $current_array)
+    public function checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route = PapiMethods::getNestedValue($last_array, $route_key);
-            $current_route = PapiMethods::getNestedValue($current_array, $route_key);
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation_request_body = PapiMethods::getOperationRequestBody($last_open_api, $operation_key);
+            $current_operation_request_body = PapiMethods::getOperationRequestBody($current_open_api, $operation_key);
 
-            $last_route_schema = $last_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $route_key, 'properties' => []];
-            $current_route_schema = $current_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $route_key, 'properties' => []];
+            $last_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($last_operation_request_body);
+            $current_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($current_operation_request_body);
 
             // are the request body property types the same?
             $diff_errors = $this->schemaPropertyTypeDiff(
-                $last_route_schema,
-                $current_route_schema,
-                PapiMethods::formatRouteKey($route_key),
+                $last_operation_schema,
+                $current_operation_schema,
+                PapiMethods::formatOperationKey($operation_key),
                 'Request Body'
             );
 
@@ -380,19 +374,19 @@ class SafeController extends PapiController
         return new SectionResults('Request Body Property Type Changes', $errors);
     }
 
-    public function checkQueryParameterTypeChanged($last_array, $current_array)
+    public function checkQueryParameterTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // are the query parameter types the same?
-            $diff_errors = $this->routeParametersTypeDiff(
-                $last_array,
-                $current_array,
-                $route_key,
+            $diff_errors = $this->operationParametersSchemaDiff(
+                $last_open_api,
+                $current_open_api,
+                $operation_key,
                 'query',
-                '[schema][type]'
+                'type'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -401,19 +395,19 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Type Changes', $errors);
     }
 
-    public function checkHeaderTypeChanged($last_array, $current_array)
+    public function checkHeaderTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // are the header types the same?
-            $diff_errors = $this->routeParametersTypeDiff(
-                $last_array,
-                $current_array,
-                $route_key,
+            $diff_errors = $this->operationParametersSchemaDiff(
+                $last_open_api,
+                $current_open_api,
+                $operation_key,
                 'header',
-                '[schema][type]'
+                'type'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -422,68 +416,76 @@ class SafeController extends PapiController
         return new SectionResults('Header Type Changes', $errors);
     }
 
-    public function checkEnumsChanged($last_array, $current_array)
+    public function checkEnumsChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route = PapiMethods::getNestedValue($last_array, $route_key);
-            $current_route = PapiMethods::getNestedValue($current_array, $route_key);
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $last_operation_responses = $last_operation->responses;
+            $last_operation_parameters = $last_operation->parameters;
+
+            $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
+            $current_operation_parameters = $current_operation->parameters;
 
             // for each response...
-            if (isset($last_route['responses'])) {
-                foreach ($last_route['responses'] as $status_code => $last_route_response) {
-                    $current_route_response = PapiMethods::getNestedValue($current_array, $route_key.'[responses]'.'['.$status_code.']');
+            foreach ($last_operation_responses as $status_code => $last_operation_response) {
+                $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
-                    // for each enum in the response...
-                    foreach (PapiMethods::arrayFindRecursive($last_route_response, 'enum') as $result) {
-                        $enum_path = $result['path'];
-                        $enum_value = $result['value'];
+                $current_operation_response_array = PapiMethods::objectToArray($current_operation_response->getSerializableData());
+                $last_operation_response_array = PapiMethods::objectToArray($last_operation_response->getSerializableData());
 
-                        // does current_array also have this enum?
-                        if ($current_route_response) {
-                            $current_enum_value = PapiMethods::getNestedValue($current_route_response, $enum_path);
-                            if ($current_enum_value) {
-                                // has the enum changed?
-                                $diff = array_diff($enum_value, $current_enum_value);
-                                if (count($diff) > 0) {
-                                    $errors[] = sprintf(
-                                        '%s (%s): Enum mismatch at `%s`.',
-                                        PapiMethods::formatRouteKey($route_key),
-                                        $status_code,
-                                        PapiMethods::formatEnumKey($enum_path),
-                                    );
-                                }
+                // for each enum in the response...
+                foreach (PapiMethods::arrayFindRecursive($last_operation_response_array, 'enum') as $result) {
+                    $last_enum_path = $result['path'];
+                    $last_enum_value = $result['value'];
+
+                    // does current_array also have this enum?
+                    if ($current_operation_response) {
+                        $current_enum_value = PapiMethods::getNestedValue($current_operation_response_array, $last_enum_path);
+
+                        if ($current_enum_value) {
+                            // has the enum changed?
+                            $diff = array_diff(array_values($last_enum_value), array_values($current_enum_value));
+                            if (count($diff) > 0) {
+                                $errors[] = sprintf(
+                                    '%s (%s): Enum mismatch at `%s`.',
+                                    PapiMethods::formatOperationKey($operation_key),
+                                    $status_code,
+                                    $last_enum_path,
+                                );
                             }
                         }
                     }
                 }
             }
 
-            // for each route parameter...
-            if (isset($last_route['parameters'])) {
-                foreach (PapiMethods::arrayFindRecursive($last_route['parameters'], 'enum') as $result) {
-                    $enum_path = $result['path'];
+            // for each operation parameter...
+            foreach ($last_operation_parameters as $parameter_key => $last_operation_parameter) {
+                $current_operation_parameter = $current_operation_parameters[$parameter_key];
+                
+                $last_operation_parameters_array = PapiMethods::objectToArray($last_operation_parameter->getSerializableData());
+                $current_operation_parameters_array = PapiMethods::objectToArray($current_operation_parameter->getSerializableData());
 
-                    $trimmed_key = substr($enum_path, 1, -1);
-                    $parts = explode('][', $trimmed_key);
-                    $parameter_index = $parts[0];
-                    $parameter_name = $last_route['parameters'][$parameter_index]['name'];
-                    $parameter_in = $last_route['parameters'][$parameter_index]['in'];
-
-                    $enum_value = $result['value'];
+                foreach (PapiMethods::arrayFindRecursive($last_operation_parameters_array, 'enum') as $result) {
+                    $last_enum_path = $result['path'];
+                                        
+                    $parameter_name = $last_operation_parameter->name;
+                    $parameter_in = $last_operation_parameter->in;
+                    $last_enum_value = $result['value'];
 
                     // does current_array also have this enum?
-                    if ($current_route) {
-                        $current_enum_value = PapiMethods::getNestedValue($current_route['parameters'], $enum_path);
+                    if ($current_operation) {
+                        $current_enum_value = PapiMethods::getNestedValue($current_operation_parameters_array, $last_enum_path);
+
                         if ($current_enum_value) {
                             // has the enum changed?
-                            $diff = array_diff($enum_value, $current_enum_value);
+                            $diff = array_diff($last_enum_value, $current_enum_value);
                             if (count($diff) > 0) {
                                 $errors[] = sprintf(
                                     '%s (%s): Enum mismatch for %s.',
-                                    PapiMethods::formatRouteKey($route_key),
+                                    PapiMethods::formatOperationKey($operation_key),
                                     'parameter::'.$parameter_in,
                                     $parameter_name,
                                 );
@@ -501,42 +503,45 @@ class SafeController extends PapiController
      * Optionality
      */
 
-    public function checkRequestBodyPropertyNowRequired($last_array, $current_array)
+    public function checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $last_route = PapiMethods::getNestedValue($last_array, $route_key);
-            $current_route = PapiMethods::getNestedValue($current_array, $route_key);
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation_request_body = PapiMethods::getOperationRequestBody($last_open_api, $operation_key);
+            $current_operation_request_body = PapiMethods::getOperationRequestBody($current_open_api, $operation_key);
 
-            $last_route_schema = $last_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
-            $current_route_schema = $current_route['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
+            // does the current spec have a response for this status code?
+            if ($current_operation_request_body) {
+                $last_operation_request_body_schema = PapiMethods::getSchemaArrayFromSpecObject($last_operation_request_body);
+                $current_operation_request_body_schema = PapiMethods::getSchemaArrayFromSpecObject($current_operation_request_body);
 
-            $diff_errors = $this->schemaPropertyRequiredDiff(
-                $last_route_schema,
-                $current_route_schema,
-                PapiMethods::formatRouteKey($route_key),
-            );
+                $diff_errors = $this->schemaPropertyRequiredDiff(
+                    $last_operation_request_body_schema,
+                    $current_operation_request_body_schema,
+                    PapiMethods::formatOperationKey($operation_key),
+                );
 
-            $errors = array_merge($errors, $diff_errors);
+                $errors = array_merge($errors, $diff_errors);
+            }
         }
 
         return new SectionResults('Request Body Property Optionality', $errors);
     }
 
-    public function checkQueryParameterNowRequired($last_array, $current_array)
+    public function checkQueryParameterNowRequired($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $diff_errors = $this->routeParametersRequiredDiff(
-                $last_array,
-                $current_array,
-                $route_key,
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $diff_errors = $this->operationParametersRequiredDiff(
+                $last_open_api,
+                $current_open_api,
+                $operation_key,
                 'query',
-                '[required]'
+                'required'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -545,18 +550,18 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Optionality', $errors);
     }
 
-    public function checkHeaderNowRequired($last_array, $current_array)
+    public function checkHeaderNowRequired($last_open_api, $current_open_api)
     {
         $errors = [];
 
-        // for matching routes...
-        foreach (PapiMethods::matchingRouteKeys($last_array, $current_array) as $route_key) {
-            $diff_errors = $this->routeParametersRequiredDiff(
-                $last_array,
-                $current_array,
-                $route_key,
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $diff_errors = $this->operationParametersRequiredDiff(
+                $last_open_api,
+                $current_open_api,
+                $operation_key,
                 'header',
-                '[required]'
+                'required'
             );
 
             $errors = array_merge($errors, $diff_errors);
@@ -571,16 +576,20 @@ class SafeController extends PapiController
 
     public function schemaObjectPropertyMap($schema, $key = 'root', $map = [])
     {
-        if ($schema['type'] === 'object') {
-            $property_keys = array_keys($schema['properties'] ?? []);
-            $map[$key] = $property_keys;
-            foreach ($property_keys as $property_key) {
-                $map = array_merge($map, $this->schemaObjectPropertyMap($schema['properties'][$property_key], $key.'.'.$property_key, $map));
-            }
+        if (isset($schema['type'])) {
+            if ($schema['type'] === 'object') {
+                $property_keys = array_keys($schema['properties'] ?? []);
+                $map[$key] = $property_keys;
+                foreach ($property_keys as $property_key) {
+                    $map = array_merge($map, $this->schemaObjectPropertyMap($schema['properties'][$property_key], $key.'.'.$property_key, $map));
+                }
 
-            return $map;
-        } elseif ($schema['type'] === 'array') {
-            return array_merge($map, $this->schemaObjectPropertyMap($schema['items'], $key.'.array[items]', $map));
+                return $map;
+            } elseif ($schema['type'] === 'array') {
+                return array_merge($map, $this->schemaObjectPropertyMap($schema['items'], $key.'.array[items]', $map));
+            } else {
+                return $map;
+            }
         } else {
             return $map;
         }
@@ -588,37 +597,45 @@ class SafeController extends PapiController
 
     public function schemaPropertyTypeMap($schema, $key = 'root', $map = [])
     {
-        if ($schema['type'] === 'object') {
-            $map[$key] = $schema['title'];
-            $properties = $schema['properties'] ?? [];
+        if (isset($schema['type'])) {
+            if ($schema['type'] === 'object') {
+                $map[$key] = $schema['title'];
+                $properties = $schema['properties'] ?? [];
 
-            foreach ($properties as $property_key => $property) {
-                $map = array_merge($map, $this->schemaPropertyTypeMap($property, $key.'.'.$property_key, $map));
+                foreach ($properties as $property_key => $property) {
+                    $map = array_merge($map, $this->schemaPropertyTypeMap($property, $key.'.'.$property_key, $map));
+                }
+
+                return $map;
+            } elseif ($schema['type'] === 'array') {
+                return array_merge($map, $this->schemaPropertyTypeMap($schema['items'], $key.'.array[items]', $map));
+            } else {
+                $map[$key] = $schema['type'];
+
+                return $map;
             }
-
-            return $map;
-        } elseif ($schema['type'] === 'array') {
-            return array_merge($map, $this->schemaPropertyTypeMap($schema['items'], $key.'.array[items]', $map));
         } else {
-            $map[$key] = $schema['type'];
-
             return $map;
         }
     }
 
     public function schemaPropertyRequiredMap($schema, $key = 'root', $map = [])
     {
-        if ($schema['type'] === 'object') {
-            $required_keys = $schema['required'] ?? [];
-            $map[$key] = $required_keys;
+        if (isset($schema['type'])) {
+            if ($schema['type'] === 'object') {
+                $required_keys = $schema['required'] ?? [];
+                $map[$key] = $required_keys;
 
-            foreach ($schema['properties'] as $property_key => $property) {
-                $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key.'.'.$property_key, $map));
+                foreach ($schema['properties'] as $property_key => $property) {
+                    $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key.'.'.$property_key, $map));
+                }
+
+                return $map;
+            } elseif ($schema['type'] === 'array') {
+                return array_merge($map, $this->schemaPropertyRequiredMap($schema['items'], $key.'.array[items]', $map));
+            } else {
+                return $map;
             }
-
-            return $map;
-        } elseif ($schema['type'] === 'array') {
-            return array_merge($map, $this->schemaPropertyRequiredMap($schema['items'], $key.'.array[items]', $map));
         } else {
             return $map;
         }
@@ -632,7 +649,7 @@ class SafeController extends PapiController
 
         // are the property keys the same?
         foreach ($a_schema_property_map as $a_object_id_key => $a_object_keys) {
-            if ($b_schema_property_map[$a_object_id_key]) {
+            if (isset($b_schema_property_map[$a_object_id_key])) {
                 $diff = array_diff($a_object_keys, $b_schema_property_map[$a_object_id_key]);
 
                 if (count($diff) > 0) {
@@ -708,47 +725,47 @@ class SafeController extends PapiController
         return $errors;
     }
 
-    public function routeParametersDiff($a_array, $b_array, $route_key, $parameter_type)
+    public function operationParametersDiff($a_open_api, $b_open_api, $operation_key, $parameter_type)
     {
-        // routeParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_route_query_parameters = array_values(
-            $this->routeParameters($a_array, $route_key, $parameter_type, '[name]')
+        // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
+        $a_operation_query_parameters = array_keys(
+            $this->operationParameters($a_open_api, $operation_key, $parameter_type, '[name]')
         );
-        $b_route_query_parameters = array_values(
-            $this->routeParameters($b_array, $route_key, $parameter_type, '[name]')
+        $b_operation_query_parameters = array_keys(
+            $this->operationParameters($b_open_api, $operation_key, $parameter_type, '[name]')
         );
-        $diff = array_diff($a_route_query_parameters, $b_route_query_parameters);
-
+        $diff = array_diff($a_operation_query_parameters, $b_operation_query_parameters);
+                     
         if (count($diff) > 0) {
             return sprintf(
                 '%s: `%s` has been removed.',
-                PapiMethods::formatRouteKey($route_key),
+                PapiMethods::formatOperationKey($operation_key),
                 join(', ', $diff)
             );
         }
     }
 
-    public function routeParametersTypeDiff($a_array, $b_array, $route_key, $param_in, $param_value_key)
+    public function operationParametersSchemaDiff($a_open_api, $b_open_api, $operation_key, $param_in, $schema_value_key)
     {
         $errors = [];
 
-        // routeParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_route_params = $this->routeParameters($a_array, $route_key, $param_in, $param_value_key);
-        $b_route_params = $this->routeParameters($b_array, $route_key, $param_in, $param_value_key);
-
+        // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
+        $a_operation_params = $this->operationSchemaParameters($a_open_api, $operation_key, $param_in, $schema_value_key);
+        $b_operation_params = $this->operationSchemaParameters($b_open_api, $operation_key, $param_in, $schema_value_key);
+        
         // for each param...
-        foreach ($a_route_params as $a_route_param_key => $a_route_param_value) {
-            if (isset($b_route_params[$a_route_param_key])) {
-                $b_route_param_value = $b_route_params[$a_route_param_key];
+        foreach ($a_operation_params as $a_operation_param_key => $a_operation_param_value) {
+            if (isset($b_operation_params[$a_operation_param_key])) {
+                $b_operation_param_value = $b_operation_params[$a_operation_param_key];
 
-                if ($b_route_param_value) {
-                    if (strcmp($a_route_param_value, $b_route_param_value) !== 0) {
+                if ($b_operation_param_value) {
+                    if (strcmp($a_operation_param_value, $b_operation_param_value) !== 0) {
                         $errors[] = sprintf(
                             '%s: Type mismatch (`%s`|`%s`) for `%s`.',
-                            PapiMethods::formatRouteKey($route_key),
-                            $a_route_param_value,
-                            $b_route_param_value,
-                            $a_route_param_key,
+                            PapiMethods::formatOperationKey($operation_key),
+                            $a_operation_param_value,
+                            $b_operation_param_value,
+                            $a_operation_param_key,
                         );
                     }
                 }
@@ -758,77 +775,111 @@ class SafeController extends PapiController
         return $errors;
     }
 
-    public function routeParametersRequiredDiff($a_array, $b_array, $route_key, $param_in, $param_value_key)
+    public function operationParametersRequiredDiff($a_open_api, $b_open_api, $operation_key, $param_in, $param_value_key)
     {
         $errors = [];
 
-        // routeParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_route_params = $this->routeParameters($a_array, $route_key, $param_in, $param_value_key);
-        $b_route_params = $this->routeParameters($b_array, $route_key, $param_in, $param_value_key);
+        // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
+        $a_operation_params = $this->operationParameterProp($a_open_api, $operation_key, $param_in, $param_value_key);
+        $b_operation_params = $this->operationParameterProp($b_open_api, $operation_key, $param_in, $param_value_key);
 
-        // for each param...
-        foreach ($a_route_params as $a_route_param_key => $a_route_param_value) {
-            if (isset($b_route_params[$a_route_param_key])) {
-                $b_route_param_value = $b_route_params[$a_route_param_key];
-
-                if ($b_route_param_value) {
-                    if (!$a_route_param_value && $b_route_param_value) {
-                        $errors[] = sprintf(
-                            '%s: New required parameter `%s`.',
-                            PapiMethods::formatRouteKey($route_key),
-                            $a_route_param_key,
-                        );
-                    }
-                }
-            }
-        }
-
-        return $errors;
-    }
-
-    public function routeParameters($array, $route_key, $parameter_type, $parameter_value_key)
-    {
-        $route_parameters = [];
-
-        $route_all_parameters = PapiMethods::getNestedValue($array, $route_key.'[parameters]');
-        if ($route_all_parameters) {
-            $route_matching_parameters = array_filter($route_all_parameters, function ($route_parameter) use ($parameter_type) {
-                return $route_parameter['in'] === $parameter_type;
-            });
-
-            foreach ($route_matching_parameters as $parameter) {
-                $route_parameters[$parameter['name']] = PapiMethods::getNestedValue($parameter, $parameter_value_key);
-            }
-        }
-
-        return $route_parameters;
-    }
-
-    public function routeDiff($a_array, $b_array, $on_property, $subject)
-    {
-        $errors = [];
-
-        $matching_keys = iterator_to_array(PapiMethods::matchingRouteKeys($a_array, $b_array));
-
-        $a_routes = array_filter($matching_keys, function ($route_key) use ($a_array, $on_property) {
-            $property_value = PapiMethods::getNestedValue($a_array, $route_key.'['.$on_property.']');
-
-            return $property_value !== true;
-        });
-
-        $b_routes = array_filter($matching_keys, function ($route_key) use ($b_array, $on_property) {
-            $property_value = PapiMethods::getNestedValue($b_array, $route_key.'['.$on_property.']');
-
-            return $property_value !== true;
-        });
-
-        $diff = array_diff($a_routes, $b_routes);
+        $diff = array_diff($a_operation_params, $b_operation_params);
 
         if (count($diff) > 0) {
-            foreach ($diff as $route_key) {
+            $errors[] = sprintf(
+                '%s: New required parameter `%s`.',
+                PapiMethods::formatOperationKey($operation_key),
+                join(', ', array_keys($diff))
+            );
+        }
+
+        return $errors;
+    }
+
+    public function operationParametersForType($open_api, $operation_key, $parameter_type)
+    {
+        $operation = PapiMethods::getOperation($open_api, $operation_key);
+
+        $operation_all_parameters = $operation->parameters;
+        if ($operation_all_parameters) {
+            return array_filter($operation_all_parameters, function ($operation_parameter) use ($parameter_type) {
+                return $operation_parameter->in === $parameter_type;
+            });
+        } else {
+            return [];
+        }
+    }
+
+    public function operationParameters($open_api, $operation_key, $parameter_type, $parameter_value_key)
+    {
+        $operation_parameters = [];
+        
+        foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
+            $parameter_object = PapiMethods::objectToArray($parameter);
+            $operation_parameters[$parameter->name] = PapiMethods::getNestedValue($parameter_object, $parameter_value_key);
+        }
+
+
+        return $operation_parameters;
+    }
+
+    public function operationParameterProp($open_api, $operation_key, $parameter_type, $schema_value_key)
+    {
+        $operation_schema_parameters = [];
+
+        foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
+            $operation_schema_parameters[$parameter->name] = $parameter->__get($schema_value_key);
+        }
+
+        return $operation_schema_parameters;
+    }
+
+    public function operationSchemaParameters($open_api, $operation_key, $parameter_type, $schema_value_key)
+    {
+        $operation_schema_parameters = [];
+        
+        foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
+            $operation_schema_parameters[$parameter->name] = $parameter->schema->__get($schema_value_key);
+        }
+
+        return $operation_schema_parameters;
+    }
+
+    public function operationDiff($a_open_api, $b_open_api, $on_property, $subject)
+    {
+        $errors = [];
+
+        $matching_operation_keys = iterator_to_array(PapiMethods::matchingOperationKeys($a_open_api, $b_open_api));
+
+        $a_operations = array_filter($matching_operation_keys, function ($operation_key) use ($a_open_api, $on_property) {
+            $operation = PapiMethods::getOperation($a_open_api, $operation_key);
+            $operation_object = PapiMethods::objectToArray($operation->getSerializableData());
+
+            if (isset($operation_object[$on_property])) {
+                return $operation_object[$on_property] !== true;
+            } else {
+                return true;
+            }
+        });
+
+        $b_operations = array_filter($matching_operation_keys, function ($operation_key) use ($b_open_api, $on_property) {
+            $operation = PapiMethods::getOperation($b_open_api, $operation_key);
+            $operation_object = PapiMethods::objectToArray($operation->getSerializableData());
+
+            if (isset($operation_object[$on_property])) {
+                return $operation_object[$on_property] !== true;
+            } else {
+                return true;
+            }
+        });
+
+        $diff = array_diff($a_operations, $b_operations);
+
+        if (count($diff) > 0) {
+            foreach ($diff as $operation_key) {
                 $errors[] = sprintf(
-                    '%s: This route has been marked as %s.',
-                    PapiMethods::formatRouteKey($route_key),
+                    '%s: This operation has been marked as %s.',
+                    PapiMethods::formatOperationKey($operation_key),
                     $subject
                 );
             }

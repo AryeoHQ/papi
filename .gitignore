@@ -3,4 +3,5 @@ vendor/
 composer.lock
 *.DS_Store
 examples/out
+examples/models/2021-06-17
 .phpunit.result.cache

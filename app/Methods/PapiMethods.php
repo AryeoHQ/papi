@@ -2,9 +2,17 @@
 
 namespace App\Methods;
 
+use Exception;
+use cebe\openapi\Reader;
 use RecursiveArrayIterator;
+use cebe\openapi\spec\OpenApi;
 use RecursiveIteratorIterator;
+use cebe\openapi\spec\Response;
+use cebe\openapi\spec\Operation;
+use cebe\openapi\SpecBaseObject;
 use Symfony\Component\Yaml\Yaml;
+use cebe\openapi\spec\RequestBody;
+use cebe\openapi\spec\Schema;
 
 class PapiMethods
 {
@@ -93,6 +101,25 @@ class PapiMethods
     /*
      * I/O
      */
+
+    public static function readSpecFileToOpenApi($file_path): ?OpenApi
+    {
+        if (file_exists($file_path)) {
+            try {
+                switch (strtolower(pathinfo($file_path, PATHINFO_EXTENSION))) {
+                case 'json':
+                    return Reader::readFromJsonFile($file_path);
+                case 'yml':
+                case 'yaml':
+                    return Reader::readFromYamlFile($file_path);
+                }
+            } catch (Exception $e) {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
 
     public static function readSpecFile($file_path)
     {
@@ -213,9 +240,51 @@ class PapiMethods
      * Misc
      */
 
-    public static function formatRouteKey($route_key)
+    public static function objectToArray($object)
     {
-        $trimmed_key = substr($route_key, 1, -1);
+        if (is_array($object) || is_object($object)) {
+            $result = [];
+            foreach ($object as $key => $value) {
+                $result[$key] = (is_array($object) || is_object($object)) ? PapiMethods::objectToArray($value) : $value;
+            }
+            return $result;
+        }
+        return $object;
+    }
+    
+    public static function printOpenApi($open_api)
+    {
+        foreach ($open_api->paths as $path => $pathItem) {
+            echo('Path: ' . $path);
+            echo(PHP_EOL);
+
+            $path_params = $pathItem->parameters;
+            if (count($path_params) > 0) {
+                echo('Path Parameters: ');
+                echo(PHP_EOL);
+            }
+            foreach ($path_params as $param) {
+                echo('- ' . $param->name . ': ' . $param->description);
+                echo(PHP_EOL);
+            }
+
+            foreach ($pathItem->getOperations() as $key => $operation) {
+                echo($key . ': ' . $operation->description);
+                echo(PHP_EOL);
+
+                foreach ($operation->parameters as $parameter) {
+                    echo('- ' . $parameter->name . ': ' . $parameter->description);
+                    echo(PHP_EOL);
+                }
+            }
+
+            echo(PHP_EOL);
+        }
+    }
+
+    public static function formatOperationKey($operation_key)
+    {
+        $trimmed_key = substr($operation_key, 1, -1);
         $parts = explode('][', $trimmed_key);
 
         return strtoupper($parts[2]).' '.$parts[1];
@@ -229,15 +298,49 @@ class PapiMethods
         return join('.', array_slice($parts, 4));
     }
 
-    public static function matchingRouteKeys($a_array, $b_array)
+    public static function matchingOperationKeys($a_open_api, $b_open_api)
     {
-        $a_routes = PapiMethods::routesFromArray($a_array, true);
+        $a_operations = PapiMethods::operationKeysFromOpenApi($a_open_api, true);
 
-        foreach ($a_routes as $route_key) {
-            // is the route also in b?
-            if (PapiMethods::getNestedValue($b_array, $route_key)) {
-                yield $route_key;
+        foreach ($a_operations as $operation_key) {
+            $key_path = explode('][', trim($operation_key, '[]'));
+            $path = $key_path[1];
+            $operation = $key_path[2];
+
+            if (isset($b_open_api->paths[$path]->getOperations()[$operation])) {
+                yield $operation_key;
             }
+        }
+    }
+
+    public static function getOperation($open_api, $operation_key): ?Operation
+    {
+        $key_path = explode('][', trim($operation_key, '[]'));
+        $path = $key_path[1];
+        $operation = $key_path[2];
+        return $open_api->paths[$path]->getOperations()[$operation];
+    }
+
+    public static function getOperationRequestBody($open_api, $operation_key): ?RequestBody
+    {
+        return PapiMethods::getOperation($open_api, $operation_key)->requestBody;
+    }
+
+    public static function getOperationResponse($open_api, $operation_key, $status_code): ?Response
+    {
+        return PapiMethods::getOperation($open_api, $operation_key)->responses[$status_code];
+    }
+
+    public static function getSchemaArrayFromSpecObject(?SpecBaseObject $object)
+    {
+        if ($object !== null) {
+            $schema = [];
+            if (isset($object->content['application/json'])) {
+                $schema = $object->content['application/json']->getSerializableData()->schema;
+            }
+            return PapiMethods::objectToArray($schema);
+        } else {
+            return [];
         }
     }
 
@@ -271,41 +374,40 @@ class PapiMethods
         return $models;
     }
 
-    public static function routes($spec_file_path)
+    public static function operationsKeys($spec_file_path)
     {
-        $array = PapiMethods::readSpecFile($spec_file_path);
-        return PapiMethods::routesFromArray($array);
+        $array = PapiMethods::readSpecFileToOpenApi($spec_file_path);
+        return PapiMethods::operationKeysFromOpenApi($array);
     }
 
-    public static function routesFromArray($array, $path_format = false)
+    public static function operationKeysFromOpenApi($open_api, $path_format = false)
     {
-        $routes = [];
+        $operations = [];
 
-        if (isset($array['paths'])) {
-            $valid_methods = ['get', 'head', 'post', 'put', 'delete', 'connect', 'options', 'trace', 'patch'];
+        $valid_methods = ['get', 'head', 'post', 'put', 'delete', 'connect', 'options', 'trace', 'patch'];
 
-            // for each path...
-            foreach ($array['paths'] as $path_key => $path) {
-                // for each method...
-                foreach ($path as $method_key => $method) {
-                    if (in_array($method_key, $valid_methods, true)) {
-                        if ($path_format) {
-                            $key_and_value = '[paths]['.$path_key.']['.$method_key.']';
-                            if (!isset($routes[$key_and_value])) {
-                                $routes[$key_and_value] = $key_and_value;
-                            }
-                        } else {
-                            $key_and_value = strtoupper($method_key).' '.$path_key;
-                            if (!isset($routes[$key_and_value])) {
-                                $routes[$key_and_value] = $key_and_value;
-                            }
+        // for each path...
+        foreach ($open_api->paths as $path_key => $pathItem) {
+            // for each method...
+            foreach ($pathItem->getOperations() as $method_key => $operationItem) {
+                if (in_array($method_key, $valid_methods, true)) {
+                    if ($path_format) {
+                        $key_and_value = '[paths]['.$path_key.']['.$method_key.']';
+                        if (!isset($operations[$key_and_value])) {
+                            $operations[$key_and_value] = $key_and_value;
+                        }
+                    } else {
+                        $key_and_value = strtoupper($method_key).' '.$path_key;
+                        if (!isset($operations[$key_and_value])) {
+                            $operations[$key_and_value] = $key_and_value;
                         }
                     }
                 }
             }
         }
 
-        return $routes;
+
+        return $operations;
     }
 
     public static function getNestedValue($array, $key_path)

@@ -35,6 +35,7 @@
   },
   "require": {
     "php": "^8.0",
+    "cebe/php-openapi": "^1.5",
     "minicli/minicli": "^2.0",
     "symfony/yaml": "^5.3"
   },

@@ -46,27 +46,27 @@ class DiffController extends PapiController
 
             return;
         } else {
-            $this->compareRoutes($spec_dir, $spec_prefix, $old_version, $new_version);
+            $this->compareOperations($spec_dir, $spec_prefix, $old_version, $new_version);
             $this->compareModels($spec_dir, $models_dir, $old_version, $new_version);
         }
     }
 
-    public function compareRoutes($spec_dir, $spec_prefix, $old_version, $new_version)
+    public function compareOperations($spec_dir, $spec_prefix, $old_version, $new_version)
     {
-        // gather routes in specs less than or equal to $old_version
+        // gather operations in specs less than or equal to $old_version
         $older_versions = PapiMethods::versionsEqualToOrBelow($spec_dir, $old_version, $this->getFormat());
-        $older_routes = $this->gatherRoutesForVersions($spec_dir, $spec_prefix, $older_versions);
+        $older_operations = $this->gatherOperationsForVersions($spec_dir, $spec_prefix, $older_versions);
         
-        // gather routes in specs newer than $old_version, but less than $new_version
+        // gather operations in specs newer than $old_version, but less than $new_version
         $newer_versions = PapiMethods::versionsBetween($spec_dir, $old_version, false, $new_version, true, $this->getFormat());
-        $newer_routes = $this->gatherRoutesForVersions($spec_dir, $spec_prefix, $newer_versions);
+        $newer_operations = $this->gatherOperationsForVersions($spec_dir, $spec_prefix, $newer_versions);
         
-        $this->showDiff('ROUTES', $older_routes, $newer_routes);
+        $this->showDiff('ROUTES', $older_operations, $newer_operations);
     }
 
-    public function gatherRoutesForVersions($spec_dir, $spec_name, $versions)
+    public function gatherOperationsForVersions($spec_dir, $spec_name, $versions)
     {
-        $routes = [];
+        $operations = [];
 
         $format = $this->getFormat();
         $valid_extensions = PapiMethods::validExtensions($format);
@@ -81,11 +81,11 @@ class DiffController extends PapiController
                 }
             }
 
-            $v_routes = PapiMethods::routes($spec_file_path);
-            $routes = array_merge($v_routes, $routes);
+            $v_operations = PapiMethods::operationsKeys($spec_file_path);
+            $operations = array_merge($v_operations, $operations);
         }
 
-        return $routes;
+        return $operations;
     }
 
     public function compareModels($spec_dir, $models_dir, $old_version, $new_version)
