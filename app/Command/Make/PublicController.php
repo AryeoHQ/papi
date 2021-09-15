@@ -11,7 +11,7 @@ class PublicController extends PapiController
     public function boot(App $app)
     {
         parent::boot($app);
-        $this->description = 'make public api spec from a de-referenced spec';
+        $this->description = 'make public api spec from a non-public spec';
         $this->parameters = [
             ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['s_path', 'path to spec file', '/examples/out/PetStore/PetStore.MERGED.json', true],

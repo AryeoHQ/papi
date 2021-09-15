@@ -46,7 +46,7 @@ class SafeController extends PapiController
 
         $current_array = PapiMethods::readSpecFile($current_spec_path);
 
-        if ($last_array === false) {
+        if ($current_array === false) {
             $this->safetyHeader();
             $this->getPrinter()->out('👎 FAIL: Unable to open current spec.', 'error');
             $this->getPrinter()->newline();
