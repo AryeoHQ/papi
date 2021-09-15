@@ -86,7 +86,7 @@ class SafeController extends PapiController
         $section_results[] = $this->checkEnumsChanged($last_open_api, $current_open_api);
 
         // // optionality...
-        // $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api);
+        $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api);
         // $section_results[] = $this->checkQueryParameterNowRequired($last_open_api, $current_open_api);
         // $section_results[] = $this->checkHeaderNowRequired($last_open_api, $current_open_api);
 
@@ -509,19 +509,22 @@ class SafeController extends PapiController
 
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
-            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
-            $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
+            $last_operation_request_body = PapiMethods::getOperationRequestBody($last_open_api, $operation_key);
+            $current_operation_request_body = PapiMethods::getOperationRequestBody($current_open_api, $operation_key);
 
-            $last_operation_schema = $last_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
-            $current_operation_schema = $current_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
+            // does the current spec have a response for this status code?
+            if ($current_operation_request_body) {
+                $last_operation_request_body_schema = PapiMethods::getSchemaArrayFromSpecObject($last_operation_request_body);
+                $current_operation_request_body_schema = PapiMethods::getSchemaArrayFromSpecObject($current_operation_request_body);
 
-            $diff_errors = $this->schemaPropertyRequiredDiff(
-                $last_operation_schema,
-                $current_operation_schema,
-                PapiMethods::formatOperationKey($operation_key),
-            );
+                $diff_errors = $this->schemaPropertyRequiredDiff(
+                    $last_operation_request_body_schema,
+                    $current_operation_request_body_schema,
+                    PapiMethods::formatOperationKey($operation_key),
+                );
 
-            $errors = array_merge($errors, $diff_errors);
+                $errors = array_merge($errors, $diff_errors);
+            }
         }
 
         return new SectionResults('Request Body Property Optionality', $errors);
@@ -618,17 +621,21 @@ class SafeController extends PapiController
 
     public function schemaPropertyRequiredMap($schema, $key = 'root', $map = [])
     {
-        if ($schema['type'] === 'object') {
-            $required_keys = $schema['required'] ?? [];
-            $map[$key] = $required_keys;
+        if (isset($schema['type'])) {
+            if ($schema['type'] === 'object') {
+                $required_keys = $schema['required'] ?? [];
+                $map[$key] = $required_keys;
 
-            foreach ($schema['properties'] as $property_key => $property) {
-                $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key.'.'.$property_key, $map));
+                foreach ($schema['properties'] as $property_key => $property) {
+                    $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key.'.'.$property_key, $map));
+                }
+
+                return $map;
+            } elseif ($schema['type'] === 'array') {
+                return array_merge($map, $this->schemaPropertyRequiredMap($schema['items'], $key.'.array[items]', $map));
+            } else {
+                return $map;
             }
-
-            return $map;
-        } elseif ($schema['type'] === 'array') {
-            return array_merge($map, $this->schemaPropertyRequiredMap($schema['items'], $key.'.array[items]', $map));
         } else {
             return $map;
         }
