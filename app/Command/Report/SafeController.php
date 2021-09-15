@@ -83,7 +83,7 @@ class SafeController extends PapiController
         $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api);
         $section_results[] = $this->checkQueryParameterTypeChanged($last_open_api, $current_open_api);
         $section_results[] = $this->checkHeaderTypeChanged($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkEnumsChanged($last_open_api, $current_open_api);
+        $section_results[] = $this->checkEnumsChanged($last_open_api, $current_open_api);
 
         // // optionality...
         // $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api);
@@ -423,32 +423,38 @@ class SafeController extends PapiController
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $last_operation_responses = $last_operation->responses;
+            $last_operation_parameters = $last_operation->parameters;
+
             $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
+            $current_operation_parameters = $current_operation->parameters;
 
             // for each response...
-            if (isset($last_operation['responses'])) {
-                foreach ($last_operation['responses'] as $status_code => $last_operation_response) {
-                    $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
+            foreach ($last_operation_responses as $status_code => $last_operation_response) {
+                $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
-                    // for each enum in the response...
-                    foreach (PapiMethods::arrayFindRecursive($last_operation_response, 'enum') as $result) {
-                        $enum_path = $result['path'];
-                        $enum_value = $result['value'];
+                $current_operation_response_array = PapiMethods::objectToArray($current_operation_response->getSerializableData());
+                $last_operation_response_array = PapiMethods::objectToArray($last_operation_response->getSerializableData());
 
-                        // does current_array also have this enum?
-                        if ($current_operation_response) {
-                            $current_enum_value = PapiMethods::getNestedValue($current_operation_response, $enum_path);
-                            if ($current_enum_value) {
-                                // has the enum changed?
-                                $diff = array_diff($enum_value, $current_enum_value);
-                                if (count($diff) > 0) {
-                                    $errors[] = sprintf(
-                                        '%s (%s): Enum mismatch at `%s`.',
-                                        PapiMethods::formatOperationKey($operation_key),
-                                        $status_code,
-                                        PapiMethods::formatEnumKey($enum_path),
-                                    );
-                                }
+                // for each enum in the response...
+                foreach (PapiMethods::arrayFindRecursive($last_operation_response_array, 'enum') as $result) {
+                    $last_enum_path = $result['path'];
+                    $last_enum_value = $result['value'];
+
+                    // does current_array also have this enum?
+                    if ($current_operation_response) {
+                        $current_enum_value = PapiMethods::getNestedValue($current_operation_response_array, $last_enum_path);
+
+                        if ($current_enum_value) {
+                            // has the enum changed?
+                            $diff = array_diff(array_values($last_enum_value), array_values($current_enum_value));
+                            if (count($diff) > 0) {
+                                $errors[] = sprintf(
+                                    '%s (%s): Enum mismatch at `%s`.',
+                                    PapiMethods::formatOperationKey($operation_key),
+                                    $status_code,
+                                    $last_enum_path,
+                                );
                             }
                         }
                     }
@@ -456,24 +462,26 @@ class SafeController extends PapiController
             }
 
             // for each operation parameter...
-            if (isset($last_operation['parameters'])) {
-                foreach (PapiMethods::arrayFindRecursive($last_operation['parameters'], 'enum') as $result) {
-                    $enum_path = $result['path'];
+            foreach ($last_operation_parameters as $parameter_key => $last_operation_parameter) {
+                $current_operation_parameter = $current_operation_parameters[$parameter_key];
+                
+                $last_operation_parameters_array = PapiMethods::objectToArray($last_operation_parameter->getSerializableData());
+                $current_operation_parameters_array = PapiMethods::objectToArray($current_operation_parameter->getSerializableData());
 
-                    $trimmed_key = substr($enum_path, 1, -1);
-                    $parts = explode('][', $trimmed_key);
-                    $parameter_index = $parts[0];
-                    $parameter_name = $last_operation['parameters'][$parameter_index]['name'];
-                    $parameter_in = $last_operation['parameters'][$parameter_index]['in'];
-
-                    $enum_value = $result['value'];
+                foreach (PapiMethods::arrayFindRecursive($last_operation_parameters_array, 'enum') as $result) {
+                    $last_enum_path = $result['path'];
+                                        
+                    $parameter_name = $last_operation_parameter->name;
+                    $parameter_in = $last_operation_parameter->in;
+                    $last_enum_value = $result['value'];
 
                     // does current_array also have this enum?
                     if ($current_operation) {
-                        $current_enum_value = PapiMethods::getNestedValue($current_operation['parameters'], $enum_path);
+                        $current_enum_value = PapiMethods::getNestedValue($current_operation_parameters_array, $last_enum_path);
+
                         if ($current_enum_value) {
                             // has the enum changed?
-                            $diff = array_diff($enum_value, $current_enum_value);
+                            $diff = array_diff($last_enum_value, $current_enum_value);
                             if (count($diff) > 0) {
                                 $errors[] = sprintf(
                                     '%s (%s): Enum mismatch for %s.',
