@@ -7,6 +7,7 @@ use cebe\openapi\Reader;
 use RecursiveArrayIterator;
 use cebe\openapi\spec\OpenApi;
 use cebe\openapi\spec\Operation;
+use cebe\openapi\spec\Response;
 use RecursiveIteratorIterator;
 use Symfony\Component\Yaml\Yaml;
 
@@ -236,6 +237,18 @@ class PapiMethods
      * Misc
      */
 
+    public static function objectToArray($object)
+    {
+        if (is_array($object) || is_object($object)) {
+            $result = [];
+            foreach ($object as $key => $value) {
+                $result[$key] = (is_array($object) || is_object($object)) ? PapiMethods::objectToArray($value) : $value;
+            }
+            return $result;
+        }
+        return $object;
+    }
+    
     public static function printOpenApi($open_api)
     {
         foreach ($open_api->paths as $path => $pathItem) {
@@ -306,6 +319,20 @@ class PapiMethods
 
         if ($operation_object !== null) {
             return $operation_object;
+        } else {
+            return null;
+        }
+    }
+
+    public static function getOperationResponse($open_api, $operation_key, $status_code): ?Response
+    {
+        $key_path = explode('][', trim($operation_key, '[]'));
+        $path = $key_path[1];
+        $operation = $key_path[2];
+        $response_object = $open_api->paths[$path]->getOperations()[$operation]->responses[$status_code];
+
+        if ($response_object !== null) {
+            return $response_object;
         } else {
             return null;
         }

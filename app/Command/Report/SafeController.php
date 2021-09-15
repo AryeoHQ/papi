@@ -69,7 +69,7 @@ class SafeController extends PapiController
         $section_results[] = $this->checkOperationSecurityAdditions($last_open_api, $current_open_api);
 
         // removals...
-        // $section_results[] = $this->checkResponsePropertyRemovals($last_array, $current_array);
+        $section_results[] = $this->checkResponsePropertyRemovals($last_open_api, $current_open_api);
         // $section_results[] = $this->checkRequestBodyPropertyRemovals($last_array, $current_array);
         // $section_results[] = $this->checkOperationMethodDirectRemovals($last_array, $current_array);
         // $section_results[] = $this->checkOperationMethodDeprecatedRemovals($last_array, $current_array);
@@ -156,28 +156,36 @@ class SafeController extends PapiController
      * Removals
      */
 
-    public function checkResponsePropertyRemovals($last_array, $current_array)
+    public function checkResponsePropertyRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
-            $last_operation = PapiMethods::getNestedValue($last_array, $operation_key);
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $last_responses = $last_operation->responses;
 
             // for each response...
-            if (isset($last_operation['responses'])) {
-                foreach ($last_operation['responses'] as $status_code => $last_operation_response) {
-                    $current_operation_response = PapiMethods::getNestedValue($current_array, $operation_key.'[responses]'.'['.$status_code.']');
+            if (count($last_responses) > 0) {
+                foreach ($last_responses as $status_code => $last_operation_response) {
+                    $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
                     // does the current spec have a response for this status code?
                     if ($current_operation_response) {
-                        $last_operation_schema = $last_operation_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_operation_response['description'], 'properties' => []];
-                        $current_operation_schema = $current_operation_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_operation_response['description'], 'properties' => []];
-
+                        $last_operation_schema = [];
+                        if (isset($last_operation_response->content['application/json'])) {
+                            $last_operation_schema = $last_operation_response->content['application/json']->getSerializableData()->schema;
+                        }
+                       
+                        $current_operation_schema = [];
+                        if (isset($current_operation_response->content['application/json'])) {
+                            $current_operation_schema = $current_operation_response->content['application/json']->getSerializableData()->schema;
+                        }
+                        
                         // are the properties the same?
                         $error = $this->schemaDiff(
-                            $last_operation_schema,
-                            $current_operation_schema,
+                            PapiMethods::objectToArray($last_operation_schema),
+                            PapiMethods::objectToArray($current_operation_schema),
                             PapiMethods::formatOperationKey($operation_key),
                             $status_code
                         );
@@ -318,17 +326,17 @@ class SafeController extends PapiController
      * Type Changes
      */
 
-    public function checkResponsePropertyTypeChanged($last_array, $current_array)
+    public function checkResponsePropertyTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
-            $last_operation = PapiMethods::getNestedValue($last_array, $operation_key);
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
 
             // for each response...
             foreach ($last_operation['responses'] as $status_code => $last_operation_response) {
-                $current_operation_response = PapiMethods::getNestedValue($current_array, $operation_key.'[responses]'.'['.$status_code.']');
+                $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
                 // does the current spec have a response for this status code?
                 if ($current_operation_response) {
@@ -351,14 +359,14 @@ class SafeController extends PapiController
         return new SectionResults('Response Property Type Changes', $errors);
     }
 
-    public function checkRequestBodyPropertyTypeChanged($last_array, $current_array)
+    public function checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
-            $last_operation = PapiMethods::getNestedValue($last_array, $operation_key);
-            $current_operation = PapiMethods::getNestedValue($current_array, $operation_key);
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
 
             $last_operation_schema = $last_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $operation_key, 'properties' => []];
             $current_operation_schema = $current_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $operation_key, 'properties' => []];
@@ -419,19 +427,19 @@ class SafeController extends PapiController
         return new SectionResults('Header Type Changes', $errors);
     }
 
-    public function checkEnumsChanged($last_array, $current_array)
+    public function checkEnumsChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
-            $last_operation = PapiMethods::getNestedValue($last_array, $operation_key);
-            $current_operation = PapiMethods::getNestedValue($current_array, $operation_key);
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
 
             // for each response...
             if (isset($last_operation['responses'])) {
                 foreach ($last_operation['responses'] as $status_code => $last_operation_response) {
-                    $current_operation_response = PapiMethods::getNestedValue($current_array, $operation_key.'[responses]'.'['.$status_code.']');
+                    $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
                     // for each enum in the response...
                     foreach (PapiMethods::arrayFindRecursive($last_operation_response, 'enum') as $result) {
@@ -498,14 +506,14 @@ class SafeController extends PapiController
      * Optionality
      */
 
-    public function checkRequestBodyPropertyNowRequired($last_array, $current_array)
+    public function checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
-            $last_operation = PapiMethods::getNestedValue($last_array, $operation_key);
-            $current_operation = PapiMethods::getNestedValue($current_array, $operation_key);
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
 
             $last_operation_schema = $last_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
             $current_operation_schema = $current_operation['requestBody']['content']['application/json']['schema'] ?? ['type' => 'blank'];
@@ -568,16 +576,20 @@ class SafeController extends PapiController
 
     public function schemaObjectPropertyMap($schema, $key = 'root', $map = [])
     {
-        if ($schema['type'] === 'object') {
-            $property_keys = array_keys($schema['properties'] ?? []);
-            $map[$key] = $property_keys;
-            foreach ($property_keys as $property_key) {
-                $map = array_merge($map, $this->schemaObjectPropertyMap($schema['properties'][$property_key], $key.'.'.$property_key, $map));
-            }
+        if (isset($schema['type'])) {
+            if ($schema['type'] === 'object') {
+                $property_keys = array_keys($schema['properties'] ?? []);
+                $map[$key] = $property_keys;
+                foreach ($property_keys as $property_key) {
+                    $map = array_merge($map, $this->schemaObjectPropertyMap($schema['properties'][$property_key], $key.'.'.$property_key, $map));
+                }
 
-            return $map;
-        } elseif ($schema['type'] === 'array') {
-            return array_merge($map, $this->schemaObjectPropertyMap($schema['items'], $key.'.array[items]', $map));
+                return $map;
+            } elseif ($schema['type'] === 'array') {
+                return array_merge($map, $this->schemaObjectPropertyMap($schema['items'], $key.'.array[items]', $map));
+            } else {
+                return $map;
+            }
         } else {
             return $map;
         }
