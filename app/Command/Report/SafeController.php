@@ -72,23 +72,23 @@ class SafeController extends PapiController
         $section_results[] = $this->checkResponsePropertyRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkRequestBodyPropertyRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkOperationMethodDirectRemovals($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkOperationMethodDeprecatedRemovals($last_array, $current_array);
-        // $section_results[] = $this->checkOperationMethodInternalRemovals($last_array, $current_array);
-        // $section_results[] = $this->checkResponseRemovals($last_array, $current_array);
-        // $section_results[] = $this->checkQueryParamRemovals($last_array, $current_array);
-        // $section_results[] = $this->checkHeaderRemovals($last_array, $current_array);
+        $section_results[] = $this->checkOperationMethodDeprecatedRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkOperationMethodInternalRemovals($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkResponseRemovals($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkQueryParamRemovals($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkHeaderRemovals($last_open_api, $current_open_api);
 
         // // type changes...
-        // $section_results[] = $this->checkResponsePropertyTypeChanged($last_array, $current_array);
-        // $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_array, $current_array);
-        // $section_results[] = $this->checkQueryParameterTypeChanged($last_array, $current_array);
-        // $section_results[] = $this->checkHeaderTypeChanged($last_array, $current_array);
-        // $section_results[] = $this->checkEnumsChanged($last_array, $current_array);
+        // $section_results[] = $this->checkResponsePropertyTypeChanged($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkQueryParameterTypeChanged($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkHeaderTypeChanged($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkEnumsChanged($last_open_api, $current_open_api);
 
         // // optionality...
-        // $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_array, $current_array);
-        // $section_results[] = $this->checkQueryParameterNowRequired($last_array, $current_array);
-        // $section_results[] = $this->checkHeaderNowRequired($last_array, $current_array);
+        // $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkQueryParameterNowRequired($last_open_api, $current_open_api);
+        // $section_results[] = $this->checkHeaderNowRequired($last_open_api, $current_open_api);
 
         // display results and exit accordingly...
         if ($this->displaySectionResultsWithErrors($section_results)) {
@@ -237,30 +237,30 @@ class SafeController extends PapiController
         return new SectionResults('Operation Removals', $errors);
     }
 
-    public function checkOperationMethodDeprecatedRemovals($last_array, $current_array)
+    public function checkOperationMethodDeprecatedRemovals($last_open_api, $current_open_api)
     {
-        $errors = $this->operationDiff($last_array, $current_array, 'deprecated', 'deprecated');
+        $errors = $this->operationDiff($last_open_api, $current_open_api, 'deprecated', 'deprecated');
 
         return new SectionResults('Operations Marked Deprecated', $errors);
     }
 
-    public function checkOperationMethodInternalRemovals($last_array, $current_array)
+    public function checkOperationMethodInternalRemovals($last_open_api, $current_open_api)
     {
-        $errors = $this->operationDiff($last_array, $current_array, 'x-internal', 'internal');
+        $errors = $this->operationDiff($last_open_api, $current_open_api, 'x-internal', 'internal');
 
         return new SectionResults('Operations Marked Internal', $errors);
     }
 
-    public function checkResponseRemovals($last_array, $current_array)
+    public function checkResponseRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
-            $last_operation_responses = PapiMethods::getNestedValue($last_array, $operation_key.'[responses]');
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation_responses = PapiMethods::getNestedValue($last_open_api, $operation_key.'[responses]');
             $last_operation_codes = array_keys($last_operation_responses);
 
-            $current_operation_responses = PapiMethods::getNestedValue($current_array, $operation_key.'[responses]');
+            $current_operation_responses = PapiMethods::getNestedValue($current_open_api, $operation_key.'[responses]');
             $current_operation_codes = array_keys($current_operation_responses);
 
             $diff = array_diff($last_operation_codes, $current_operation_codes);
@@ -279,14 +279,14 @@ class SafeController extends PapiController
         return new SectionResults('Response Removals', $errors);
     }
 
-    public function checkQueryParamRemovals($last_array, $current_array)
+    public function checkQueryParamRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // do the query parameters match?
-            $error = $this->operationParametersDiff($last_array, $current_array, $operation_key, 'query');
+            $error = $this->operationParametersDiff($last_open_api, $current_open_api, $operation_key, 'query');
             if ($error) {
                 $errors[] = $error;
             }
@@ -295,14 +295,14 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Removals', $errors);
     }
 
-    public function checkHeaderRemovals($last_array, $current_array)
+    public function checkHeaderRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // do the headers match?
-            $error = $this->operationParametersDiff($last_array, $current_array, $operation_key, 'header');
+            $error = $this->operationParametersDiff($last_open_api, $current_open_api, $operation_key, 'header');
             if ($error) {
                 $errors[] = $error;
             }
@@ -374,16 +374,16 @@ class SafeController extends PapiController
         return new SectionResults('Request Body Property Type Changes', $errors);
     }
 
-    public function checkQueryParameterTypeChanged($last_array, $current_array)
+    public function checkQueryParameterTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // are the query parameter types the same?
             $diff_errors = $this->operationParametersTypeDiff(
-                $last_array,
-                $current_array,
+                $last_open_api,
+                $current_open_api,
                 $operation_key,
                 'query',
                 '[schema][type]'
@@ -395,16 +395,16 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Type Changes', $errors);
     }
 
-    public function checkHeaderTypeChanged($last_array, $current_array)
+    public function checkHeaderTypeChanged($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             // are the header types the same?
             $diff_errors = $this->operationParametersTypeDiff(
-                $last_array,
-                $current_array,
+                $last_open_api,
+                $current_open_api,
                 $operation_key,
                 'header',
                 '[schema][type]'
@@ -519,15 +519,15 @@ class SafeController extends PapiController
         return new SectionResults('Request Body Property Optionality', $errors);
     }
 
-    public function checkQueryParameterNowRequired($last_array, $current_array)
+    public function checkQueryParameterNowRequired($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             $diff_errors = $this->operationParametersRequiredDiff(
-                $last_array,
-                $current_array,
+                $last_open_api,
+                $current_open_api,
                 $operation_key,
                 'query',
                 '[required]'
@@ -539,15 +539,15 @@ class SafeController extends PapiController
         return new SectionResults('Query Parameter Optionality', $errors);
     }
 
-    public function checkHeaderNowRequired($last_array, $current_array)
+    public function checkHeaderNowRequired($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             $diff_errors = $this->operationParametersRequiredDiff(
-                $last_array,
-                $current_array,
+                $last_open_api,
+                $current_open_api,
                 $operation_key,
                 'header',
                 '[required]'
@@ -802,22 +802,32 @@ class SafeController extends PapiController
         return $operation_parameters;
     }
 
-    public function operationDiff($a_array, $b_array, $on_property, $subject)
+    public function operationDiff($a_open_api, $b_open_api, $on_property, $subject)
     {
         $errors = [];
 
-        $matching_keys = iterator_to_array(PapiMethods::matchingOperationKeys($a_array, $b_array));
+        $matching_operation_keys = iterator_to_array(PapiMethods::matchingOperationKeys($a_open_api, $b_open_api));
 
-        $a_operations = array_filter($matching_keys, function ($operation_key) use ($a_array, $on_property) {
-            $property_value = PapiMethods::getNestedValue($a_array, $operation_key.'['.$on_property.']');
+        $a_operations = array_filter($matching_operation_keys, function ($operation_key) use ($a_open_api, $on_property) {
+            $operation = PapiMethods::getOperation($a_open_api, $operation_key);
+            $operation_object = PapiMethods::objectToArray($operation->getSerializableData());
 
-            return $property_value !== true;
+            if (isset($operation_object[$on_property])) {
+                return $operation_object[$on_property] !== true;
+            } else {
+                return true;
+            }
         });
 
-        $b_operations = array_filter($matching_keys, function ($operation_key) use ($b_array, $on_property) {
-            $property_value = PapiMethods::getNestedValue($b_array, $operation_key.'['.$on_property.']');
+        $b_operations = array_filter($matching_operation_keys, function ($operation_key) use ($b_open_api, $on_property) {
+            $operation = PapiMethods::getOperation($b_open_api, $operation_key);
+            $operation_object = PapiMethods::objectToArray($operation->getSerializableData());
 
-            return $property_value !== true;
+            if (isset($operation_object[$on_property])) {
+                return $operation_object[$on_property] !== true;
+            } else {
+                return true;
+            }
         });
 
         $diff = array_diff($a_operations, $b_operations);
