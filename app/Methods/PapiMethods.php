@@ -6,10 +6,13 @@ use Exception;
 use cebe\openapi\Reader;
 use RecursiveArrayIterator;
 use cebe\openapi\spec\OpenApi;
-use cebe\openapi\spec\Operation;
-use cebe\openapi\spec\Response;
 use RecursiveIteratorIterator;
+use cebe\openapi\spec\Response;
+use cebe\openapi\spec\Operation;
+use cebe\openapi\SpecBaseObject;
 use Symfony\Component\Yaml\Yaml;
+use cebe\openapi\spec\RequestBody;
+use cebe\openapi\spec\Schema;
 
 class PapiMethods
 {
@@ -304,7 +307,7 @@ class PapiMethods
             $path = $key_path[1];
             $operation = $key_path[2];
 
-            if ($b_open_api->paths[$path]->getOperations()[$operation]) {
+            if (isset($b_open_api->paths[$path]->getOperations()[$operation])) {
                 yield $operation_key;
             }
         }
@@ -315,26 +318,29 @@ class PapiMethods
         $key_path = explode('][', trim($operation_key, '[]'));
         $path = $key_path[1];
         $operation = $key_path[2];
-        $operation_object = $open_api->paths[$path]->getOperations()[$operation];
+        return $open_api->paths[$path]->getOperations()[$operation];
+    }
 
-        if ($operation_object !== null) {
-            return $operation_object;
-        } else {
-            return null;
-        }
+    public static function getOperationRequestBody($open_api, $operation_key): ?RequestBody
+    {
+        return PapiMethods::getOperation($open_api, $operation_key)->requestBody;
     }
 
     public static function getOperationResponse($open_api, $operation_key, $status_code): ?Response
     {
-        $key_path = explode('][', trim($operation_key, '[]'));
-        $path = $key_path[1];
-        $operation = $key_path[2];
-        $response_object = $open_api->paths[$path]->getOperations()[$operation]->responses[$status_code];
+        return PapiMethods::getOperation($open_api, $operation_key)->responses[$status_code];
+    }
 
-        if ($response_object !== null) {
-            return $response_object;
+    public static function getSchemaArrayFromSpecObject(?SpecBaseObject $object)
+    {
+        if ($object !== null) {
+            $schema = [];
+            if (isset($object->content['application/json'])) {
+                $schema = $object->content['application/json']->getSerializableData()->schema;
+            }
+            return PapiMethods::objectToArray($schema);
         } else {
-            return null;
+            return [];
         }
     }
 

@@ -70,8 +70,8 @@ class SafeController extends PapiController
 
         // removals...
         $section_results[] = $this->checkResponsePropertyRemovals($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkRequestBodyPropertyRemovals($last_array, $current_array);
-        // $section_results[] = $this->checkOperationMethodDirectRemovals($last_array, $current_array);
+        $section_results[] = $this->checkRequestBodyPropertyRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkOperationMethodDirectRemovals($last_open_api, $current_open_api);
         // $section_results[] = $this->checkOperationMethodDeprecatedRemovals($last_array, $current_array);
         // $section_results[] = $this->checkOperationMethodInternalRemovals($last_array, $current_array);
         // $section_results[] = $this->checkResponseRemovals($last_array, $current_array);
@@ -172,20 +172,10 @@ class SafeController extends PapiController
 
                     // does the current spec have a response for this status code?
                     if ($current_operation_response) {
-                        $last_operation_schema = [];
-                        if (isset($last_operation_response->content['application/json'])) {
-                            $last_operation_schema = $last_operation_response->content['application/json']->getSerializableData()->schema;
-                        }
-                       
-                        $current_operation_schema = [];
-                        if (isset($current_operation_response->content['application/json'])) {
-                            $current_operation_schema = $current_operation_response->content['application/json']->getSerializableData()->schema;
-                        }
-                        
                         // are the properties the same?
                         $error = $this->schemaDiff(
-                            PapiMethods::objectToArray($last_operation_schema),
-                            PapiMethods::objectToArray($current_operation_schema),
+                            PapiMethods::getSchemaArrayFromSpecObject($last_operation_response),
+                            PapiMethods::getSchemaArrayFromSpecObject($current_operation_response),
                             PapiMethods::formatOperationKey($operation_key),
                             $status_code
                         );
@@ -201,22 +191,21 @@ class SafeController extends PapiController
         return new SectionResults('Response Property Removals', $errors);
     }
 
-    public function checkRequestBodyPropertyRemovals($last_array, $current_array)
+    public function checkRequestBodyPropertyRemovals($last_open_api, $current_open_api)
     {
         $errors = [];
 
         // for matching operations...
-        foreach (PapiMethods::matchingOperationKeys($last_array, $current_array) as $operation_key) {
-            $last_operation_request_body = PapiMethods::getNestedValue($last_array, $operation_key.'[requestBody]');
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation_request_body = PapiMethods::getOperationRequestBody($last_open_api, $operation_key);
 
             // was there a request body in last spec?
             if ($last_operation_request_body) {
-                $current_operation_request_body = PapiMethods::getNestedValue($current_array, $operation_key.'[requestBody]');
-
+                $current_operation_request_body = PapiMethods::getOperationRequestBody($current_open_api, $operation_key);
                 // if so, has it changed?
                 $error = $this->schemaDiff(
-                    $last_operation_request_body['content']['application/json']['schema'],
-                    $current_operation_request_body['content']['application/json']['schema'],
+                    PapiMethods::getSchemaArrayFromSpecObject($last_operation_request_body),
+                    PapiMethods::getSchemaArrayFromSpecObject($current_operation_request_body),
                     PapiMethods::formatOperationKey($operation_key),
                     'Request Body'
                 );
@@ -641,7 +630,7 @@ class SafeController extends PapiController
 
         // are the property keys the same?
         foreach ($a_schema_property_map as $a_object_id_key => $a_object_keys) {
-            if ($b_schema_property_map[$a_object_id_key]) {
+            if (isset($b_schema_property_map[$a_object_id_key])) {
                 $diff = array_diff($a_object_keys, $b_schema_property_map[$a_object_id_key]);
 
                 if (count($diff) > 0) {
