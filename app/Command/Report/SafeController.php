@@ -74,9 +74,9 @@ class SafeController extends PapiController
         $section_results[] = $this->checkOperationMethodDirectRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkOperationMethodDeprecatedRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkOperationMethodInternalRemovals($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkResponseRemovals($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkQueryParamRemovals($last_open_api, $current_open_api);
-        // $section_results[] = $this->checkHeaderRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkResponseRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkQueryParamRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkHeaderRemovals($last_open_api, $current_open_api);
 
         // // type changes...
         // $section_results[] = $this->checkResponsePropertyTypeChanged($last_open_api, $current_open_api);
@@ -257,11 +257,11 @@ class SafeController extends PapiController
 
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
-            $last_operation_responses = PapiMethods::getNestedValue($last_open_api, $operation_key.'[responses]');
-            $last_operation_codes = array_keys($last_operation_responses);
+            $last_operation_responses = PapiMethods::getOperation($last_open_api, $operation_key)->responses;
+            $last_operation_codes = array_keys(PapiMethods::objectToArray($last_operation_responses));
 
-            $current_operation_responses = PapiMethods::getNestedValue($current_open_api, $operation_key.'[responses]');
-            $current_operation_codes = array_keys($current_operation_responses);
+            $current_operation_responses = PapiMethods::getOperation($current_open_api, $operation_key)->responses;
+            $current_operation_codes = array_keys(PapiMethods::objectToArray($current_operation_responses));
 
             $diff = array_diff($last_operation_codes, $current_operation_codes);
 
@@ -706,17 +706,17 @@ class SafeController extends PapiController
         return $errors;
     }
 
-    public function operationParametersDiff($a_array, $b_array, $operation_key, $parameter_type)
+    public function operationParametersDiff($a_open_api, $b_open_api, $operation_key, $parameter_type)
     {
         // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_operation_query_parameters = array_values(
-            $this->operationParameters($a_array, $operation_key, $parameter_type, '[name]')
+        $a_operation_query_parameters = array_keys(
+            $this->operationParameters($a_open_api, $operation_key, $parameter_type, '[name]')
         );
-        $b_operation_query_parameters = array_values(
-            $this->operationParameters($b_array, $operation_key, $parameter_type, '[name]')
+        $b_operation_query_parameters = array_keys(
+            $this->operationParameters($b_open_api, $operation_key, $parameter_type, '[name]')
         );
         $diff = array_diff($a_operation_query_parameters, $b_operation_query_parameters);
-
+                     
         if (count($diff) > 0) {
             return sprintf(
                 '%s: `%s` has been removed.',
@@ -726,13 +726,13 @@ class SafeController extends PapiController
         }
     }
 
-    public function operationParametersTypeDiff($a_array, $b_array, $operation_key, $param_in, $param_value_key)
+    public function operationParametersTypeDiff($a_open_api, $b_open_api, $operation_key, $param_in, $param_value_key)
     {
         $errors = [];
 
         // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_operation_params = $this->operationParameters($a_array, $operation_key, $param_in, $param_value_key);
-        $b_operation_params = $this->operationParameters($b_array, $operation_key, $param_in, $param_value_key);
+        $a_operation_params = $this->operationParameters($a_open_api, $operation_key, $param_in, $param_value_key);
+        $b_operation_params = $this->operationParameters($b_open_api, $operation_key, $param_in, $param_value_key);
 
         // for each param...
         foreach ($a_operation_params as $a_operation_param_key => $a_operation_param_value) {
@@ -756,13 +756,13 @@ class SafeController extends PapiController
         return $errors;
     }
 
-    public function operationParametersRequiredDiff($a_array, $b_array, $operation_key, $param_in, $param_value_key)
+    public function operationParametersRequiredDiff($a_open_api, $b_open_api, $operation_key, $param_in, $param_value_key)
     {
         $errors = [];
 
         // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
-        $a_operation_params = $this->operationParameters($a_array, $operation_key, $param_in, $param_value_key);
-        $b_operation_params = $this->operationParameters($b_array, $operation_key, $param_in, $param_value_key);
+        $a_operation_params = $this->operationParameters($a_open_api, $operation_key, $param_in, $param_value_key);
+        $b_operation_params = $this->operationParameters($b_open_api, $operation_key, $param_in, $param_value_key);
 
         // for each param...
         foreach ($a_operation_params as $a_operation_param_key => $a_operation_param_value) {
@@ -784,18 +784,20 @@ class SafeController extends PapiController
         return $errors;
     }
 
-    public function operationParameters($array, $operation_key, $parameter_type, $parameter_value_key)
+    public function operationParameters($open_api, $operation_key, $parameter_type, $parameter_value_key)
     {
         $operation_parameters = [];
+        $operation = PapiMethods::getOperation($open_api, $operation_key);
 
-        $operation_all_parameters = PapiMethods::getNestedValue($array, $operation_key.'[parameters]');
+        $operation_all_parameters = $operation->parameters;
         if ($operation_all_parameters) {
             $operation_matching_parameters = array_filter($operation_all_parameters, function ($operation_parameter) use ($parameter_type) {
-                return $operation_parameter['in'] === $parameter_type;
+                return $operation_parameter->in === $parameter_type;
             });
 
             foreach ($operation_matching_parameters as $parameter) {
-                $operation_parameters[$parameter['name']] = PapiMethods::getNestedValue($parameter, $parameter_value_key);
+                $parameter_object = PapiMethods::objectToArray($parameter);
+                $operation_parameters[$parameter->name] = PapiMethods::getNestedValue($parameter_object, $parameter_value_key);
             }
         }
 
