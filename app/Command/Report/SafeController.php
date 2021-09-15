@@ -78,8 +78,8 @@ class SafeController extends PapiController
         $section_results[] = $this->checkQueryParamRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkHeaderRemovals($last_open_api, $current_open_api);
 
-        // // type changes...
-        // $section_results[] = $this->checkResponsePropertyTypeChanged($last_open_api, $current_open_api);
+        // type changes...
+        $section_results[] = $this->checkResponsePropertyTypeChanged($last_open_api, $current_open_api);
         // $section_results[] = $this->checkRequestBodyPropertyTypeChanged($last_open_api, $current_open_api);
         // $section_results[] = $this->checkQueryParameterTypeChanged($last_open_api, $current_open_api);
         // $section_results[] = $this->checkHeaderTypeChanged($last_open_api, $current_open_api);
@@ -324,13 +324,13 @@ class SafeController extends PapiController
             $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
 
             // for each response...
-            foreach ($last_operation['responses'] as $status_code => $last_operation_response) {
+            foreach ($last_operation->responses as $status_code => $last_operation_response) {
                 $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
                 // does the current spec have a response for this status code?
                 if ($current_operation_response) {
-                    $last_operation_schema = $last_operation_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $last_operation_response['description'], 'properties' => []];
-                    $current_operation_schema = $current_operation_response['content']['application/json']['schema'] ?? ['type' => 'object', 'title' => $current_operation_response['description'], 'properties' => []];
+                    $last_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($last_operation_response);
+                    $current_operation_schema = PapiMethods::getSchemaArrayFromSpecObject($current_operation_response);
 
                     // are the types the same?
                     $diff_errors = $this->schemaPropertyTypeDiff(
@@ -586,20 +586,24 @@ class SafeController extends PapiController
 
     public function schemaPropertyTypeMap($schema, $key = 'root', $map = [])
     {
-        if ($schema['type'] === 'object') {
-            $map[$key] = $schema['title'];
-            $properties = $schema['properties'] ?? [];
+        if (isset($schema['type'])) {
+            if ($schema['type'] === 'object') {
+                $map[$key] = $schema['title'];
+                $properties = $schema['properties'] ?? [];
 
-            foreach ($properties as $property_key => $property) {
-                $map = array_merge($map, $this->schemaPropertyTypeMap($property, $key.'.'.$property_key, $map));
+                foreach ($properties as $property_key => $property) {
+                    $map = array_merge($map, $this->schemaPropertyTypeMap($property, $key.'.'.$property_key, $map));
+                }
+
+                return $map;
+            } elseif ($schema['type'] === 'array') {
+                return array_merge($map, $this->schemaPropertyTypeMap($schema['items'], $key.'.array[items]', $map));
+            } else {
+                $map[$key] = $schema['type'];
+
+                return $map;
             }
-
-            return $map;
-        } elseif ($schema['type'] === 'array') {
-            return array_merge($map, $this->schemaPropertyTypeMap($schema['items'], $key.'.array[items]', $map));
         } else {
-            $map[$key] = $schema['type'];
-
             return $map;
         }
     }
