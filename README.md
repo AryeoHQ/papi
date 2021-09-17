@@ -15,7 +15,11 @@ composer require aryeo/papi --dev
 
 ```bash
 # show all commands
-./vendor/bin/papi help
+./bin/papi help
+
+# report safe example...
+export PWD=$(pwd)
+./bin/papi report safe l_spec=${PWD}/examples/out/PetStore/PetStore.LAST.json c_spec=${PWD}/examples/out/PetStore/PetStore.MERGED.json
 ```
 
 # Contributing

@@ -599,7 +599,7 @@ class SafeController extends PapiController
     {
         if (isset($schema['type'])) {
             if ($schema['type'] === 'object') {
-                $map[$key] = $schema['title'];
+                $map[$key.'.title'] = $schema['title'];
                 $properties = $schema['properties'] ?? [];
 
                 foreach ($properties as $property_key => $property) {
@@ -674,18 +674,18 @@ class SafeController extends PapiController
         $b_schema_property_type_map = $this->schemaPropertyTypeMap($b_schema);
 
         // are the property types the same?
-        foreach ($a_schema_property_type_map as $a_property_path => $a_property_type) {
+        foreach ($a_schema_property_type_map as $a_property_path => $a_property_value) {
             if (isset($b_schema_property_type_map[$a_property_path])) {
                 if ($b_schema_property_type_map[$a_property_path]) {
-                    $b_property_type = $b_schema_property_type_map[$a_property_path];
+                    $b_property_value = $b_schema_property_type_map[$a_property_path];
 
-                    if (strcmp($a_property_type, $b_property_type) !== 0) {
+                    if (strcmp($a_property_value, $b_property_value) !== 0 && $a_property_path !== "root.title") {
                         $errors[] = sprintf(
                             '%s (%s): Type mismatch (`%s`|`%s`) for `%s`.',
                             $subject,
                             $location,
-                            $a_property_type,
-                            $b_property_type,
+                            $a_property_value,
+                            $b_property_value,
                             $a_property_path
                         );
                     }
