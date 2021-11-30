@@ -18,7 +18,7 @@ class ModelsController extends PapiController
         ];
         $this->flags = [
             ['oas_3_1_plus', 'clean models for inclusion in OAS specs that are v3.1+'],
-            ['override', 'override values with known defaults']
+            ['override', 'apply known defaults if key/value pairs already exist']
         ];
         $this->notes = [
             'Cleaning models applies known defaults for missing key/value pairs.',

@@ -45,6 +45,7 @@ class PapiController extends CommandController
         $this->printDescription();
         $this->printUsage();
         $this->printArguments();
+        $this->printFlags();
         $this->printParameters();
         $this->printNotes();
     }
@@ -227,7 +228,7 @@ class PapiController extends CommandController
             $this->getPrinter()->out('Flags', 'bold');
             foreach ($this->flags as $flag) {
                 $this->getPrinter()->newline();
-                $this->getPrinter()->out('  '.str_pad('--'.$flag[0], 10, ' ', STR_PAD_RIGHT), 'success');
+                $this->getPrinter()->out('  '.str_pad('--'.$flag[0], 20, ' ', STR_PAD_RIGHT), 'success');
                 $this->getPrinter()->rawOutput("\t".$flag[1]);
             }
             $this->printSectionEnd();
