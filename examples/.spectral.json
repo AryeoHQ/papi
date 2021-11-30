@@ -27,18 +27,6 @@
                 }
             ]
         },
-        "spec-no-nulls": {
-            "formats": [
-                "oas2",
-                "oas3"
-            ],
-            "description": "APIs must not produce or consume `nullable` values.",
-            "severity": "warn",
-            "given": "$..nullable",
-            "then": {
-                "function": "falsy"
-            }
-        },
         "spec-requests-get-invalid-codes": {
             "formats": [
                 "oas2",

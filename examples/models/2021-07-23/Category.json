@@ -5,11 +5,15 @@
     "id": {
       "type": "integer",
       "format": "int64",
-      "example": 1
+      "example": 1,
+      "nullable": true,
+      "x-nullable": true
     },
     "name": {
       "type": "string",
-      "example": "Dogs"
+      "example": "Dogs",
+      "nullable": true,
+      "x-nullable": true
     }
   }
 }

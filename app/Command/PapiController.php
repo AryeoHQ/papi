@@ -11,6 +11,7 @@ class PapiController extends CommandController
     protected $description;
     protected $arguments;
     protected $parameters;
+    protected $flags;
     protected $notes;
 
     public function boot(App $app)
@@ -21,6 +22,7 @@ class PapiController extends CommandController
         $this->description = '[description]';
         $this->arguments = [];
         $this->parameters = [];
+        $this->flags = [];
         $this->notes = [];
     }
 
@@ -91,6 +93,11 @@ class PapiController extends CommandController
         // for each parameter...
         foreach ($this->parameters as $parameter) {
             $usage = $usage.' '.$parameter[0].'=['.$parameter[0].']';
+        }
+
+        // for each flag...
+        foreach ($this->flags as $flag) {
+            $usage = $usage.' --'.$flag[0];
         }
 
         $this->getPrinter()->rawOutput($usage);
@@ -209,6 +216,19 @@ class PapiController extends CommandController
                 if (!empty($parameter[2])) {
                     $this->getPrinter()->out(' [ex: '.$parameter[2].']', 'info');
                 }
+            }
+            $this->printSectionEnd();
+        }
+    }
+
+    public function printFlags()
+    {
+        if (count($this->flags) > 0) {
+            $this->getPrinter()->out('Flags', 'bold');
+            foreach ($this->flags as $flag) {
+                $this->getPrinter()->newline();
+                $this->getPrinter()->out('  '.str_pad('--'.$flag[0], 10, ' ', STR_PAD_RIGHT), 'success');
+                $this->getPrinter()->rawOutput("\t".$flag[1]);
             }
             $this->printSectionEnd();
         }

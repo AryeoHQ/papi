@@ -4,13 +4,19 @@
   "properties": {
     "code": {
       "type": "integer",
-      "format": "int32"
+      "format": "int32",
+      "nullable": true,
+      "x-nullable": true
     },
     "type": {
-      "type": "string"
+      "type": "string",
+      "nullable": true,
+      "x-nullable": true
     },
     "message": {
-      "type": "string"
+      "type": "string",
+      "nullable": true,
+      "x-nullable": true
     }
-  }  
+  }
 }

@@ -1,26 +1,36 @@
 {
-    "title": "Address",
-    "type": "object",
-    "properties": {
-        "street_line_1": {
-            "type": "string",
-            "example": "437 Lytton"
-        },
-        "street_line_2": {
-            "type": "string",
-            "example": "Apartment 172"
-        },
-        "city": {
-            "type": "string",
-            "example": "Palo Alto"
-        },
-        "state": {
-            "type": "string",
-            "example": "CA"
-        },
-        "zip": {
-            "type": "string",
-            "example": "94301"
-        }
+  "title": "Address",
+  "type": "object",
+  "properties": {
+    "street_line_1": {
+      "type": "string",
+      "example": "437 Lytton",
+      "nullable": true,
+      "x-nullable": true
+    },
+    "street_line_2": {
+      "type": "string",
+      "example": "Apartment 172",
+      "nullable": true,
+      "x-nullable": true
+    },
+    "city": {
+      "type": "string",
+      "example": "Palo Alto",
+      "nullable": true,
+      "x-nullable": true
+    },
+    "state": {
+      "type": "string",
+      "example": "CA",
+      "nullable": true,
+      "x-nullable": true
+    },
+    "zip": {
+      "type": "string",
+      "example": "94301",
+      "nullable": true,
+      "x-nullable": true
     }
+  }
 }

@@ -4,10 +4,14 @@
   "properties": {
     "id": {
       "type": "integer",
-      "format": "int64"
+      "format": "int64",
+      "nullable": true,
+      "x-nullable": true
     },
     "name": {
-      "type": "string"
+      "type": "string",
+      "nullable": true,
+      "x-nullable": true
     }
   }
 }

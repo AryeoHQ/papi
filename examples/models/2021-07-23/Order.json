@@ -5,21 +5,29 @@
     "id": {
       "type": "integer",
       "format": "int64",
-      "example": 10
+      "example": 10,
+      "nullable": true,
+      "x-nullable": true
     },
     "petId": {
       "type": "integer",
       "format": "int64",
-      "example": 198772
+      "example": 198772,
+      "nullable": true,
+      "x-nullable": true
     },
     "quantity": {
       "type": "integer",
       "format": "int32",
-      "example": 7
+      "example": 7,
+      "nullable": true,
+      "x-nullable": true
     },
     "shipDate": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "nullable": true,
+      "x-nullable": true
     },
     "status": {
       "type": "string",
@@ -29,10 +37,14 @@
         "placed",
         "approved",
         "delivered"
-      ]
+      ],
+      "nullable": true,
+      "x-nullable": true
     },
     "complete": {
-      "type": "boolean"
+      "type": "boolean",
+      "nullable": true,
+      "x-nullable": true
     }
   }
 }

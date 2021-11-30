@@ -12,7 +12,6 @@ use cebe\openapi\spec\Operation;
 use cebe\openapi\SpecBaseObject;
 use Symfony\Component\Yaml\Yaml;
 use cebe\openapi\spec\RequestBody;
-use cebe\openapi\spec\Schema;
 
 class PapiMethods
 {

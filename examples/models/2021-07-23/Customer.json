@@ -5,17 +5,23 @@
     "id": {
       "type": "integer",
       "format": "int64",
-      "example": 100000
+      "example": 100000,
+      "nullable": true,
+      "x-nullable": true
     },
     "username": {
       "type": "string",
-      "example": "fehguy"
+      "example": "fehguy",
+      "nullable": true,
+      "x-nullable": true
     },
     "address": {
       "type": "array",
       "items": {
         "$ref": "./Address.json"
-      }
+      },
+      "nullable": true,
+      "x-nullable": true
     }
   }
 }
