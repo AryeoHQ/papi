@@ -446,14 +446,19 @@ class SafeController extends PapiController
                         $current_enum_value = PapiMethods::getNestedValue($current_operation_response_array, $last_enum_path);
 
                         if ($current_enum_value) {
-                            // has the enum changed?
-                            $diff = array_diff(array_values($last_enum_value), array_values($current_enum_value));
-                            if (count($diff) > 0) {
+                            $current_enum_cases = array_values($current_enum_value);
+                            $last_enum_cases = array_values($last_enum_value);
+                            $intersections = array_intersect($last_enum_cases, $current_enum_cases);
+
+                            // does the new array at least contain all values from the previous (i.e. no removals)
+                            if (count($intersections) != count($last_enum_cases)) {
+                                $difference = join(", ", array_diff($last_enum_cases, $current_enum_cases));
                                 $errors[] = sprintf(
-                                    '%s (%s): Enum mismatch at `%s`.',
+                                    '%s (%s): Enum removal detected at `%s` (%s).',
                                     PapiMethods::formatOperationKey($operation_key),
                                     $status_code,
                                     $last_enum_path,
+                                    $difference
                                 );
                             }
                         }
@@ -480,14 +485,19 @@ class SafeController extends PapiController
                         $current_enum_value = PapiMethods::getNestedValue($current_operation_parameters_array, $last_enum_path);
 
                         if ($current_enum_value) {
-                            // has the enum changed?
-                            $diff = array_diff($last_enum_value, $current_enum_value);
-                            if (count($diff) > 0) {
+                            $current_enum_cases = array_values($current_enum_value);
+                            $last_enum_cases = array_values($last_enum_value);
+                            $intersections = array_intersect($last_enum_cases, $current_enum_cases);
+
+                            // does the new array at least contain all values from the previous (i.e. no removals)
+                            if (count($intersections) != count($last_enum_cases)) {
+                                $difference = join(", ", array_diff($last_enum_cases, $current_enum_cases));
                                 $errors[] = sprintf(
-                                    '%s (%s): Enum mismatch for %s.',
+                                    '%s (%s): Enum removal detected at `%s` (%s).',
                                     PapiMethods::formatOperationKey($operation_key),
                                     'parameter::'.$parameter_in,
                                     $parameter_name,
+                                    $difference
                                 );
                             }
                         }
@@ -599,7 +609,7 @@ class SafeController extends PapiController
     {
         if (isset($schema['type'])) {
             if ($schema['type'] === 'object') {
-                $map[$key.'.title'] = $schema['title'];
+                $map[$key.'.title'] = isset($schema['title']) ? $schema['title'] : '';
                 $properties = $schema['properties'] ?? [];
 
                 foreach ($properties as $property_key => $property) {
