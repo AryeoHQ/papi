@@ -6,52 +6,44 @@
       "type": "integer",
       "format": "int64",
       "example": 10,
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "username": {
       "type": "string",
       "example": "theUser",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "firstName": {
       "type": "string",
       "example": "John",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "lastName": {
       "type": "string",
       "example": "James",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "email": {
       "type": "string",
       "example": "john@email.com",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "password": {
       "type": "string",
       "example": "12345",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "phone": {
       "type": "string",
       "example": "12345",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "userStatus": {
       "type": "integer",
       "description": "User Status",
       "format": "int32",
       "example": 1,
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     }
   }
 }

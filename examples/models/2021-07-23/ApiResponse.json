@@ -5,18 +5,15 @@
     "code": {
       "type": "integer",
       "format": "int32",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "type": {
       "type": "string",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "message": {
       "type": "string",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     }
   }
 }

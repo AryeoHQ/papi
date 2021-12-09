@@ -6,28 +6,24 @@
       "type": "integer",
       "format": "int64",
       "example": 10,
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "petId": {
       "type": "integer",
       "format": "int64",
       "example": 198772,
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "quantity": {
       "type": "integer",
       "format": "int32",
       "example": 7,
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "shipDate": {
       "type": "string",
       "format": "date-time",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "status": {
       "type": "string",
@@ -38,13 +34,11 @@
         "approved",
         "delivered"
       ],
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "complete": {
       "type": "boolean",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     }
   }
 }

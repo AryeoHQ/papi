@@ -5,26 +5,22 @@
     "street": {
       "type": "string",
       "example": "437 Lytton",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "city": {
       "type": "string",
       "example": "Palo Alto",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "state": {
       "type": "string",
       "example": "CA",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "zip": {
       "type": "string",
       "example": "94301",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     }
   }
 }

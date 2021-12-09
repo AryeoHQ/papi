@@ -6,14 +6,12 @@
       "type": "integer",
       "format": "int64",
       "example": 1,
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "name": {
       "type": "string",
       "example": "Dogs",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     }
   }
 }

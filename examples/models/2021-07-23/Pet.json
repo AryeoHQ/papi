@@ -6,35 +6,30 @@
       "type": "integer",
       "format": "int64",
       "example": 10,
-      "nullable": false,
-      "x-nullable": false
+      "nullable": false
     },
     "name": {
       "type": "string",
       "example": "doggie",
-      "nullable": false,
-      "x-nullable": false
+      "nullable": false
     },
     "category": {
       "$ref": "./Category.json",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "photoUrls": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "nullable": false,
-      "x-nullable": false
+      "nullable": false
     },
     "tags": {
       "type": "array",
       "items": {
         "$ref": "./Tag.json"
       },
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "status": {
       "type": "string",
@@ -44,8 +39,7 @@
         "pending",
         "sold"
       ],
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     }
   },
   "required": [

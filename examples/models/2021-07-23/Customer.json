@@ -6,22 +6,19 @@
       "type": "integer",
       "format": "int64",
       "example": 100000,
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "username": {
       "type": "string",
       "example": "fehguy",
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     },
     "address": {
       "type": "array",
       "items": {
         "$ref": "./Address.json"
       },
-      "nullable": true,
-      "x-nullable": true
+      "nullable": true
     }
   }
 }
