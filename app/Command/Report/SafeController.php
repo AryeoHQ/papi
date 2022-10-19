@@ -43,7 +43,7 @@ class SafeController extends PapiController
             $this->getPrinter()->newline();
             exit(-1);
         }
-        
+
         // open current api spec
         $current_open_api = PapiMethods::readSpecFileToOpenApi($current_spec_path);
         if ($current_open_api === null) {
@@ -126,7 +126,6 @@ class SafeController extends PapiController
                     }
                 }
             }
-
 
             $current_operation_security = [];
             if ($current_operation->security) {
@@ -433,33 +432,35 @@ class SafeController extends PapiController
             foreach ($last_operation_responses as $status_code => $last_operation_response) {
                 $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
-                $current_operation_response_array = PapiMethods::objectToArray($current_operation_response->getSerializableData());
-                $last_operation_response_array = PapiMethods::objectToArray($last_operation_response->getSerializableData());
+                if ($current_operation_response) {
+                    $current_operation_response_array = PapiMethods::objectToArray($current_operation_response->getSerializableData());
+                    $last_operation_response_array = PapiMethods::objectToArray($last_operation_response->getSerializableData());
 
-                // for each enum in the response...
-                foreach (PapiMethods::arrayFindRecursive($last_operation_response_array, 'enum') as $result) {
-                    $last_enum_path = $result['path'];
-                    $last_enum_value = $result['value'];
+                    // for each enum in the response...
+                    foreach (PapiMethods::arrayFindRecursive($last_operation_response_array, 'enum') as $result) {
+                        $last_enum_path = $result['path'];
+                        $last_enum_value = $result['value'];
 
-                    // does current_array also have this enum?
-                    if ($current_operation_response) {
-                        $current_enum_value = PapiMethods::getNestedValue($current_operation_response_array, $last_enum_path);
+                        // does current_array also have this enum?
+                        if ($current_operation_response) {
+                            $current_enum_value = PapiMethods::getNestedValue($current_operation_response_array, $last_enum_path);
 
-                        if ($current_enum_value) {
-                            $current_enum_cases = array_values($current_enum_value);
-                            $last_enum_cases = array_values($last_enum_value);
-                            $intersections = array_intersect($last_enum_cases, $current_enum_cases);
+                            if ($current_enum_value) {
+                                $current_enum_cases = array_values($current_enum_value);
+                                $last_enum_cases = array_values($last_enum_value);
+                                $intersections = array_intersect($last_enum_cases, $current_enum_cases);
 
-                            // does the new array at least contain all values from the previous (i.e. no removals)
-                            if (count($intersections) != count($last_enum_cases)) {
-                                $difference = join(", ", array_diff($last_enum_cases, $current_enum_cases));
-                                $errors[] = sprintf(
-                                    '%s (%s): Enum removal detected at `%s` (%s).',
-                                    PapiMethods::formatOperationKey($operation_key),
-                                    $status_code,
-                                    $last_enum_path,
-                                    $difference
-                                );
+                                // does the new array at least contain all values from the previous (i.e. no removals)
+                                if (count($intersections) !== count($last_enum_cases)) {
+                                    $difference = join(', ', array_diff($last_enum_cases, $current_enum_cases));
+                                    $errors[] = sprintf(
+                                        '%s (%s): Enum removal detected at `%s` (%s).',
+                                        PapiMethods::formatOperationKey($operation_key),
+                                        $status_code,
+                                        $last_enum_path,
+                                        $difference
+                                    );
+                                }
                             }
                         }
                     }
@@ -469,13 +470,13 @@ class SafeController extends PapiController
             // for each operation parameter...
             foreach ($last_operation_parameters as $parameter_key => $last_operation_parameter) {
                 $current_operation_parameter = $current_operation_parameters[$parameter_key];
-                
+
                 $last_operation_parameters_array = PapiMethods::objectToArray($last_operation_parameter->getSerializableData());
                 $current_operation_parameters_array = PapiMethods::objectToArray($current_operation_parameter->getSerializableData());
 
                 foreach (PapiMethods::arrayFindRecursive($last_operation_parameters_array, 'enum') as $result) {
                     $last_enum_path = $result['path'];
-                                        
+
                     $parameter_name = $last_operation_parameter->name;
                     $parameter_in = $last_operation_parameter->in;
                     $last_enum_value = $result['value'];
@@ -490,8 +491,8 @@ class SafeController extends PapiController
                             $intersections = array_intersect($last_enum_cases, $current_enum_cases);
 
                             // does the new array at least contain all values from the previous (i.e. no removals)
-                            if (count($intersections) != count($last_enum_cases)) {
-                                $difference = join(", ", array_diff($last_enum_cases, $current_enum_cases));
+                            if (count($intersections) !== count($last_enum_cases)) {
+                                $difference = join(', ', array_diff($last_enum_cases, $current_enum_cases));
                                 $errors[] = sprintf(
                                     '%s (%s): Enum removal detected at `%s` (%s).',
                                     PapiMethods::formatOperationKey($operation_key),
@@ -609,7 +610,7 @@ class SafeController extends PapiController
     {
         if (isset($schema['type'])) {
             if ($schema['type'] === 'object') {
-                $map[$key.'.title'] = isset($schema['title']) ? $schema['title'] : '';
+                $map[$key.'.title'] = $schema['title'] ?? '';
                 $properties = $schema['properties'] ?? [];
 
                 foreach ($properties as $property_key => $property) {
@@ -636,8 +637,10 @@ class SafeController extends PapiController
                 $required_keys = $schema['required'] ?? [];
                 $map[$key] = $required_keys;
 
-                foreach ($schema['properties'] as $property_key => $property) {
-                    $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key.'.'.$property_key, $map));
+                if (isset($schema['properties'])) {
+                    foreach ($schema['properties'] as $property_key => $property) {
+                        $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key.'.'.$property_key, $map));
+                    }
                 }
 
                 return $map;
@@ -689,7 +692,7 @@ class SafeController extends PapiController
                 if ($b_schema_property_type_map[$a_property_path]) {
                     $b_property_value = $b_schema_property_type_map[$a_property_path];
 
-                    if (strcmp($a_property_value, $b_property_value) !== 0 && $a_property_path !== "root.title") {
+                    if (strcmp($a_property_value, $b_property_value) !== 0 && $a_property_path !== 'root.title') {
                         $errors[] = sprintf(
                             '%s (%s): Type mismatch (`%s`|`%s`) for `%s`.',
                             $subject,
@@ -745,7 +748,7 @@ class SafeController extends PapiController
             $this->operationParameters($b_open_api, $operation_key, $parameter_type, '[name]')
         );
         $diff = array_diff($a_operation_query_parameters, $b_operation_query_parameters);
-                     
+
         if (count($diff) > 0) {
             return sprintf(
                 '%s: `%s` has been removed.',
@@ -762,7 +765,7 @@ class SafeController extends PapiController
         // operationParameters returns an array with format... ['PARAM_NAME' => 'value', ...]
         $a_operation_params = $this->operationSchemaParameters($a_open_api, $operation_key, $param_in, $schema_value_key);
         $b_operation_params = $this->operationSchemaParameters($b_open_api, $operation_key, $param_in, $schema_value_key);
-        
+
         // for each param...
         foreach ($a_operation_params as $a_operation_param_key => $a_operation_param_value) {
             if (isset($b_operation_params[$a_operation_param_key])) {
@@ -823,12 +826,11 @@ class SafeController extends PapiController
     public function operationParameters($open_api, $operation_key, $parameter_type, $parameter_value_key)
     {
         $operation_parameters = [];
-        
+
         foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
             $parameter_object = PapiMethods::objectToArray($parameter);
             $operation_parameters[$parameter->name] = PapiMethods::getNestedValue($parameter_object, $parameter_value_key);
         }
-
 
         return $operation_parameters;
     }
@@ -847,7 +849,7 @@ class SafeController extends PapiController
     public function operationSchemaParameters($open_api, $operation_key, $parameter_type, $schema_value_key)
     {
         $operation_schema_parameters = [];
-        
+
         foreach ($this->operationParametersForType($open_api, $operation_key, $parameter_type) as $parameter) {
             $operation_schema_parameters[$parameter->name] = $parameter->schema->__get($schema_value_key);
         }
