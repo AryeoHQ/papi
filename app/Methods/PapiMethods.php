@@ -3,15 +3,15 @@
 namespace App\Methods;
 
 use Exception;
-use cebe\openapi\Reader;
 use RecursiveArrayIterator;
-use cebe\openapi\spec\OpenApi;
 use RecursiveIteratorIterator;
-use cebe\openapi\spec\Response;
-use cebe\openapi\spec\Operation;
-use cebe\openapi\SpecBaseObject;
 use Symfony\Component\Yaml\Yaml;
+use cebe\openapi\Reader;
+use cebe\openapi\SpecBaseObject;
+use cebe\openapi\spec\OpenApi;
+use cebe\openapi\spec\Operation;
 use cebe\openapi\spec\RequestBody;
+use cebe\openapi\spec\Response;
 
 class PapiMethods
 {
@@ -70,7 +70,7 @@ class PapiMethods
     {
         if (file_exists($dir) && is_dir($dir)) {
             $items = PapiMethods::scandirRecursively($dir);
-     
+
             if ($items) {
                 return array_filter($items, function ($item) use ($format) {
                     $extension = pathinfo($item, PATHINFO_EXTENSION);
@@ -106,11 +106,11 @@ class PapiMethods
         if (file_exists($file_path)) {
             try {
                 switch (strtolower(pathinfo($file_path, PATHINFO_EXTENSION))) {
-                case 'json':
-                    return Reader::readFromJsonFile($file_path);
-                case 'yml':
-                case 'yaml':
-                    return Reader::readFromYamlFile($file_path);
+                    case 'json':
+                        return Reader::readFromJsonFile($file_path);
+                    case 'yml':
+                    case 'yaml':
+                        return Reader::readFromYamlFile($file_path);
                 }
             } catch (Exception $e) {
                 return null;
@@ -250,7 +250,7 @@ class PapiMethods
         }
         return $object;
     }
-    
+
     public static function printOpenApi($open_api)
     {
         foreach ($open_api->paths as $path => $pathItem) {
@@ -310,6 +310,12 @@ class PapiMethods
                 yield $operation_key;
             }
         }
+    }
+
+    public static function getMethodFromOperationKey($operation_key): string
+    {
+        $key_path = explode('][', trim($operation_key, '[]'));
+        return $key_path[2];
     }
 
     public static function getOperation($open_api, $operation_key): ?Operation
@@ -490,7 +496,7 @@ class PapiMethods
     public static function versionsBetween($spec_dir, $version_floor, $include_floor, $version_ceiling, $include_ceiling, $format)
     {
         $spec_files = PapiMethods::specFilesInDir($spec_dir, $format);
-        
+
         $spec_versions = array_map(function ($a) {
             $extension = pathinfo($a, PATHINFO_EXTENSION);
             $base_name = basename($a, '.'.$extension);

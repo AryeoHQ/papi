@@ -85,7 +85,8 @@ class SafeController extends PapiController
         $section_results[] = $this->checkHeaderTypeChanged($last_open_api, $current_open_api);
         $section_results[] = $this->checkEnumsChanged($last_open_api, $current_open_api);
 
-        // // optionality...
+        // optionality...
+        $section_results[] = $this->checkResponsePropertyNowNullable($last_open_api, $current_open_api);
         $section_results[] = $this->checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api);
         $section_results[] = $this->checkQueryParameterNowRequired($last_open_api, $current_open_api);
         $section_results[] = $this->checkHeaderNowRequired($last_open_api, $current_open_api);
@@ -513,6 +514,105 @@ class SafeController extends PapiController
     /*
      * Optionality
      */
+
+    public function checkResponsePropertyNowNullable($last_open_api, $current_open_api)
+    {
+        $errors = [];
+
+        // for matching operations...
+        foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
+            $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $last_operation_responses = $last_operation->responses;
+
+            // for each response...
+            foreach ($last_operation_responses as $status_code => $last_operation_response) {
+                $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
+
+                if ($current_operation_response) {
+                    $current_operation_response_schema = PapiMethods::getSchemaArrayFromSpecObject($current_operation_response);
+                    $last_operation_response_schema = PapiMethods::getSchemaArrayFromSpecObject($last_operation_response);
+
+                    if (isset($last_operation_response_schema["properties"]) && isset($current_operation_response_schema["properties"])) {
+                        $last_operation_response_properties = $last_operation_response_schema["properties"];
+                        $current_operation_response_properties = $current_operation_response_schema["properties"];
+
+                        // for each response property...
+                        foreach ($last_operation_response_properties as $property_key => $last_property) {
+                            $errors = array_merge(
+                                $errors,
+                                $this->comparePropertySafeNullabilityRecursive(
+                                    $operation_key,
+                                    $status_code,
+                                    '',
+                                    $property_key,
+                                    $last_property,
+                                    $current_operation_response_properties[$property_key]
+                                )
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        return new SectionResults('Response Property Optionality', $errors);
+    }
+
+    public function comparePropertySafeNullabilityRecursive($operation_key, $status_code, $property_key_prefix, $property_key, $property_one, $property_two)
+    {
+        $errors = [];
+
+        $errors = array_merge(
+            $errors,
+            $this->comparePropertySafeNullability(
+                $operation_key,
+                $status_code,
+                $property_key_prefix,
+                $property_key,
+                $property_one,
+                $property_two
+            )
+        );
+
+        if (isset($property_one["properties"]) && isset($property_two["properties"])) {
+            $property_one_properties = $property_one["properties"];
+            $property_two_properties = $property_two["properties"];
+
+            // for each response property...
+            foreach ($property_one_properties as $next_property_key => $next_property) {
+                $errors = array_merge(
+                    $errors,
+                    $this->comparePropertySafeNullabilityRecursive(
+                        $operation_key,
+                        $status_code,
+                        $property_key.'.',
+                        $next_property_key,
+                        $next_property,
+                        $property_two_properties[$next_property_key]
+                    )
+                );
+            }
+        }
+
+        return $errors;
+    }
+
+    public function comparePropertySafeNullability($operation_key, $status_code, $property_key_prefix, $property_key, $property_one, $property_two)
+    {
+        $property_one_nullable = $property_one['nullable'] ?? false;
+        $property_two_nullable = $property_two['nullable'] ?? false;
+
+        if (!$property_one_nullable && $property_two_nullable) {
+            return [sprintf(
+                '%s (%s): Property `%s` in the response changed from non-nullable to nullable.',
+                PapiMethods::formatOperationKey($operation_key),
+                $status_code,
+                $property_key_prefix.$property_key
+            )];
+        } else {
+            return [];
+        }
+    }
 
     public function checkRequestBodyPropertyNowRequired($last_open_api, $current_open_api)
     {
