@@ -497,7 +497,7 @@ class SafeController extends PapiController
                                 $errors[] = sprintf(
                                     '%s (%s): Enum removal detected at `%s` (%s).',
                                     PapiMethods::formatOperationKey($operation_key),
-                                    'parameter::'.$parameter_in,
+                                    'parameter::' . $parameter_in,
                                     $parameter_name,
                                     $difference
                                 );
@@ -546,7 +546,7 @@ class SafeController extends PapiController
                                     '',
                                     $property_key,
                                     $last_property,
-                                    $current_operation_response_properties[$property_key]
+                                    $current_operation_response_properties[$property_key] ?? []
                                 )
                             );
                         }
@@ -585,7 +585,7 @@ class SafeController extends PapiController
                     $this->comparePropertySafeNullabilityRecursive(
                         $operation_key,
                         $status_code,
-                        $property_key.'.',
+                        $property_key . '.',
                         $next_property_key,
                         $next_property,
                         $property_two_properties[$next_property_key]
@@ -607,7 +607,7 @@ class SafeController extends PapiController
                 '%s (%s): Property `%s` in the response changed from non-nullable to nullable.',
                 PapiMethods::formatOperationKey($operation_key),
                 $status_code,
-                $property_key_prefix.$property_key
+                $property_key_prefix . $property_key
             )];
         } else {
             return [];
@@ -692,12 +692,12 @@ class SafeController extends PapiController
                 $property_keys = array_keys($schema['properties'] ?? []);
                 $map[$key] = $property_keys;
                 foreach ($property_keys as $property_key) {
-                    $map = array_merge($map, $this->schemaObjectPropertyMap($schema['properties'][$property_key], $key.'.'.$property_key, $map));
+                    $map = array_merge($map, $this->schemaObjectPropertyMap($schema['properties'][$property_key], $key . '.' . $property_key, $map));
                 }
 
                 return $map;
             } elseif ($schema['type'] === 'array') {
-                return array_merge($map, $this->schemaObjectPropertyMap($schema['items'], $key.'.array[items]', $map));
+                return array_merge($map, $this->schemaObjectPropertyMap($schema['items'], $key . '.array[items]', $map));
             } else {
                 return $map;
             }
@@ -710,16 +710,16 @@ class SafeController extends PapiController
     {
         if (isset($schema['type'])) {
             if ($schema['type'] === 'object') {
-                $map[$key.'.title'] = $schema['title'] ?? '';
+                $map[$key . '.title'] = $schema['title'] ?? '';
                 $properties = $schema['properties'] ?? [];
 
                 foreach ($properties as $property_key => $property) {
-                    $map = array_merge($map, $this->schemaPropertyTypeMap($property, $key.'.'.$property_key, $map));
+                    $map = array_merge($map, $this->schemaPropertyTypeMap($property, $key . '.' . $property_key, $map));
                 }
 
                 return $map;
             } elseif ($schema['type'] === 'array') {
-                return array_merge($map, $this->schemaPropertyTypeMap($schema['items'], $key.'.array[items]', $map));
+                return array_merge($map, $this->schemaPropertyTypeMap($schema['items'], $key . '.array[items]', $map));
             } else {
                 $map[$key] = $schema['type'];
 
@@ -739,13 +739,13 @@ class SafeController extends PapiController
 
                 if (isset($schema['properties'])) {
                     foreach ($schema['properties'] as $property_key => $property) {
-                        $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key.'.'.$property_key, $map));
+                        $map = array_merge($map, $this->schemaPropertyRequiredMap($property, $key . '.' . $property_key, $map));
                     }
                 }
 
                 return $map;
             } elseif ($schema['type'] === 'array') {
-                return array_merge($map, $this->schemaPropertyRequiredMap($schema['items'], $key.'.array[items]', $map));
+                return array_merge($map, $this->schemaPropertyRequiredMap($schema['items'], $key . '.array[items]', $map));
             } else {
                 return $map;
             }
