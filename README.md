@@ -19,7 +19,7 @@ composer require aryeo/papi --dev
 
 # report safe example...
 export PWD=$(pwd)
-./bin/papi report safe l_spec=${PWD}/examples/out/PetStore/PetStore.LAST.json c_spec=${PWD}/examples/out/PetStore/PetStore.MERGED.json
+./bin/papi report safe l_spec=${PWD}/examples/reference/PetStore/PetStore.2021-07-23.json c_spec=${PWD}/examples/reference/PetStore/PetStore.2021-07-23-changed.json
 ```
 
 # Contributing

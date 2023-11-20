@@ -26,9 +26,9 @@ class PapiMethods
 
     public static function specTestDirectory($project_dir)
     {
-        $normalized_project_dir = '/'.ltrim($project_dir, '/');
+        $normalized_project_dir = '/' . ltrim($project_dir, '/');
 
-        return $normalized_project_dir.'/tests/Spec';
+        return $normalized_project_dir . '/tests/Spec';
     }
 
     public static function scandirRecursively($dir)
@@ -77,7 +77,7 @@ class PapiMethods
                     if (is_dir($item) || !PapiMethods::validExtension($format, $extension)) {
                         return false;
                     } else {
-                        return strlen(''.basename($item, '.'.$extension)) > 0;
+                        return strlen('' . basename($item, '.' . $extension)) > 0;
                     }
                 });
             }
@@ -89,7 +89,7 @@ class PapiMethods
     public static function specNameAndVersion($spec_file)
     {
         $extension = pathinfo($spec_file, PATHINFO_EXTENSION);
-        $file_name = ''.basename($spec_file, '.'.$extension);
+        $file_name = '' . basename($spec_file, '.' . $extension);
         $split_index = strpos($file_name, '.');
         $spec_name = substr($file_name, 0, $split_index);
         $spec_version = substr($file_name, $split_index + 1);
@@ -215,7 +215,7 @@ class PapiMethods
                 }
 
                 yield [
-                    'path' => '['.str_replace('.', '][', implode($glue, $keys)).']',
+                    'path' => '[' . str_replace('.', '][', implode($glue, $keys)) . ']',
                     'value' => $value,
                 ];
             }
@@ -286,7 +286,7 @@ class PapiMethods
         $trimmed_key = substr($operation_key, 1, -1);
         $parts = explode('][', $trimmed_key);
 
-        return strtoupper($parts[2]).' '.$parts[1];
+        return strtoupper($parts[2]) . ' ' . $parts[1];
     }
 
     public static function formatEnumKey($property_key)
@@ -306,7 +306,7 @@ class PapiMethods
             $path = $key_path[1];
             $operation = $key_path[2];
 
-            if (isset($b_open_api->paths[$path]->getOperations()[$operation])) {
+            if (isset($b_open_api->paths[$path]) && $b_open_api->paths[$path]->getOperations()[$operation]) {
                 yield $operation_key;
             }
         }
@@ -352,10 +352,10 @@ class PapiMethods
     public static function fullyQualifiedClassName($path, $spec_name, $spec_version)
     {
         $path_segments = PapiMethods::specPathToSegments($path);
-        $class_name = join('', $path_segments).'Test';
-        $class_namespace = 'Tests\Spec\\'.ucfirst($spec_name).'\\'.str_replace('-', '_', $spec_version);
+        $class_name = join('', $path_segments) . 'Test';
+        $class_namespace = 'Tests\Spec\\' . ucfirst($spec_name) . '\\' . str_replace('-', '_', $spec_version);
 
-        return $class_namespace.'\\'.$class_name;
+        return $class_namespace . '\\' . $class_name;
     }
 
     public static function models($models_dir, $format)
@@ -367,9 +367,9 @@ class PapiMethods
             $models_dir = basename(dirname($model_path));
 
             $extension = pathinfo($model_path, PATHINFO_EXTENSION);
-            $model_name = basename($model_path, '.'.$extension);
+            $model_name = basename($model_path, '.' . $extension);
 
-            $model_key = $models_dir.DIRECTORY_SEPARATOR.$model_name;
+            $model_key = $models_dir . DIRECTORY_SEPARATOR . $model_name;
 
             if (!isset($models[$model_key])) {
                 $models[$model_key] = $model_key;
@@ -397,12 +397,12 @@ class PapiMethods
             foreach ($pathItem->getOperations() as $method_key => $operationItem) {
                 if (in_array($method_key, $valid_methods, true)) {
                     if ($path_format) {
-                        $key_and_value = '[paths]['.$path_key.']['.$method_key.']';
+                        $key_and_value = '[paths][' . $path_key . '][' . $method_key . ']';
                         if (!isset($operations[$key_and_value])) {
                             $operations[$key_and_value] = $key_and_value;
                         }
                     } else {
-                        $key_and_value = strtoupper($method_key).' '.$path_key;
+                        $key_and_value = strtoupper($method_key) . ' ' . $path_key;
                         if (!isset($operations[$key_and_value])) {
                             $operations[$key_and_value] = $key_and_value;
                         }
@@ -481,7 +481,7 @@ class PapiMethods
 
         $spec_versions = array_map(function ($a) {
             $extension = pathinfo($a, PATHINFO_EXTENSION);
-            $base_name = basename($a, '.'.$extension);
+            $base_name = basename($a, '.' . $extension);
 
             return substr($base_name, strpos($base_name, '.') + 1);
         }, $spec_files);
@@ -499,7 +499,7 @@ class PapiMethods
 
         $spec_versions = array_map(function ($a) {
             $extension = pathinfo($a, PATHINFO_EXTENSION);
-            $base_name = basename($a, '.'.$extension);
+            $base_name = basename($a, '.' . $extension);
 
             return substr($base_name, strpos($base_name, '.') + 1);
         }, $spec_files);
