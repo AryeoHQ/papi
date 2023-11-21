@@ -470,37 +470,39 @@ class SafeController extends PapiController
 
             // for each operation parameter...
             foreach ($last_operation_parameters as $parameter_key => $last_operation_parameter) {
-                $current_operation_parameter = $current_operation_parameters[$parameter_key];
+                if (isset($current_operation_parameters[$parameter_key])) {
+                    $current_operation_parameter = $current_operation_parameters[$parameter_key];
 
-                $last_operation_parameters_array = PapiMethods::objectToArray($last_operation_parameter->getSerializableData());
-                $current_operation_parameters_array = PapiMethods::objectToArray($current_operation_parameter->getSerializableData());
+                    $last_operation_parameters_array = PapiMethods::objectToArray($last_operation_parameter->getSerializableData());
+                    $current_operation_parameters_array = PapiMethods::objectToArray($current_operation_parameter->getSerializableData());
 
-                foreach (PapiMethods::arrayFindRecursive($last_operation_parameters_array, 'enum') as $result) {
-                    $last_enum_path = $result['path'];
+                    foreach (PapiMethods::arrayFindRecursive($last_operation_parameters_array, 'enum') as $result) {
+                        $last_enum_path = $result['path'];
 
-                    $parameter_name = $last_operation_parameter->name;
-                    $parameter_in = $last_operation_parameter->in;
-                    $last_enum_value = $result['value'];
+                        $parameter_name = $last_operation_parameter->name;
+                        $parameter_in = $last_operation_parameter->in;
+                        $last_enum_value = $result['value'];
 
-                    // does current_array also have this enum?
-                    if ($current_operation) {
-                        $current_enum_value = PapiMethods::getNestedValue($current_operation_parameters_array, $last_enum_path);
+                        // does current_array also have this enum?
+                        if ($current_operation) {
+                            $current_enum_value = PapiMethods::getNestedValue($current_operation_parameters_array, $last_enum_path);
 
-                        if ($current_enum_value) {
-                            $current_enum_cases = array_values($current_enum_value);
-                            $last_enum_cases = array_values($last_enum_value);
-                            $intersections = array_intersect($last_enum_cases, $current_enum_cases);
+                            if ($current_enum_value) {
+                                $current_enum_cases = array_values($current_enum_value);
+                                $last_enum_cases = array_values($last_enum_value);
+                                $intersections = array_intersect($last_enum_cases, $current_enum_cases);
 
-                            // does the new array at least contain all values from the previous (i.e. no removals)
-                            if (count($intersections) !== count($last_enum_cases)) {
-                                $difference = join(', ', array_diff($last_enum_cases, $current_enum_cases));
-                                $errors[] = sprintf(
-                                    '%s (%s): Enum removal detected at `%s` (%s).',
-                                    PapiMethods::formatOperationKey($operation_key),
-                                    'parameter::' . $parameter_in,
-                                    $parameter_name,
-                                    $difference
-                                );
+                                // does the new array at least contain all values from the previous (i.e. no removals)
+                                if (count($intersections) !== count($last_enum_cases)) {
+                                    $difference = join(', ', array_diff($last_enum_cases, $current_enum_cases));
+                                    $errors[] = sprintf(
+                                        '%s (%s): Enum removal detected at `%s` (%s).',
+                                        PapiMethods::formatOperationKey($operation_key),
+                                        'parameter::' . $parameter_in,
+                                        $parameter_name,
+                                        $difference
+                                    );
+                                }
                             }
                         }
                     }
@@ -580,17 +582,19 @@ class SafeController extends PapiController
 
             // for each response property...
             foreach ($property_one_properties as $next_property_key => $next_property) {
-                $errors = array_merge(
-                    $errors,
-                    $this->comparePropertySafeNullabilityRecursive(
-                        $operation_key,
-                        $status_code,
-                        $property_key . '.',
-                        $next_property_key,
-                        $next_property,
-                        $property_two_properties[$next_property_key]
-                    )
-                );
+                if (isset($property_two_properties[$next_property_key])) {
+                    $errors = array_merge(
+                        $errors,
+                        $this->comparePropertySafeNullabilityRecursive(
+                            $operation_key,
+                            $status_code,
+                            $property_key . '.',
+                            $next_property_key,
+                            $next_property,
+                            $property_two_properties[$next_property_key]
+                        )
+                    );
+                }
             }
         }
 

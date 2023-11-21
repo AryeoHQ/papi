@@ -1,0 +1,17 @@
+{
+  "title": "Category",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "format": "int64",
+      "example": 1,
+      "nullable": true
+    },
+    "name": {
+      "type": "string",
+      "example": "Dogs",
+      "nullable": true
+    }
+  }
+}

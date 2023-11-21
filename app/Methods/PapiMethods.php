@@ -306,8 +306,10 @@ class PapiMethods
             $path = $key_path[1];
             $operation = $key_path[2];
 
-            if (isset($b_open_api->paths[$path]) && $b_open_api->paths[$path]->getOperations()[$operation]) {
-                yield $operation_key;
+            if (isset($b_open_api->paths[$path])) {
+                if (isset($b_open_api->paths[$path]->getOperations()[$operation])) {
+                    yield $operation_key;
+                }
             }
         }
     }

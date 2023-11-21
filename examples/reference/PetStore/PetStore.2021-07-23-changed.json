@@ -46,17 +46,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../models/2021-07-23/Pet.json"
+                "$ref": "../../models/2021-07-24/Pet.json"
               }
             },
             "application/xml": {
               "schema": {
-                "$ref": "../../models/2021-07-23/Pet.json"
+                "$ref": "../../models/2021-07-24/Pet.json"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "../../models/2021-07-23/Pet.json"
+                "$ref": "../../models/2021-07-24/Pet.json"
               }
             }
           },
@@ -68,12 +68,12 @@
             "content": {
               "application/xml": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/Pet.json"
+                  "$ref": "../../models/2021-07-24/Pet.json"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/Pet.json"
+                  "$ref": "../../models/2021-07-24/Pet.json"
                 }
               }
             }
@@ -112,8 +112,7 @@
               "default": "available",
               "enum": [
                 "available",
-                "pending",
-                "sold"
+                "pending"
               ]
             }
           }
@@ -126,7 +125,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "../../models/2021-07-23/Pet.json"
+                    "$ref": "../../models/2021-07-24/Pet.json"
                   }
                 }
               },
@@ -134,7 +133,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "../../models/2021-07-23/Pet.json"
+                    "$ref": "../../models/2021-07-24/Pet.json"
                   }
                 }
               }
@@ -149,7 +148,8 @@
             "petstore_auth": [
               "write:pets",
               "read:pets"
-            ]
+            ],
+            "new": []
           }
         ]
       }
@@ -185,7 +185,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "../../models/2021-07-23/Pet.json"
+                    "$ref": "../../models/2021-07-24/Pet.json"
                   }
                 }
               },
@@ -193,7 +193,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "../../models/2021-07-23/Pet.json"
+                    "$ref": "../../models/2021-07-24/Pet.json"
                   }
                 }
               }
@@ -239,18 +239,15 @@
             "content": {
               "application/xml": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/Pet.json"
+                  "$ref": "../../models/2021-07-24/Pet.json"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/Pet.json"
+                  "$ref": "../../models/2021-07-24/Pet.json"
                 }
               }
             }
-          },
-          "400": {
-            "description": "Invalid ID supplied"
           },
           "404": {
             "description": "Pet not found"
@@ -272,6 +269,7 @@
         "tags": [
           "pet"
         ],
+        "deprecated": true,
         "summary": "Updates a pet in the store with form data",
         "description": "Updates a pet in the store with form data",
         "operationId": "updatePetWithForm",
@@ -324,17 +322,19 @@
         "tags": [
           "pet"
         ],
+        "x-internal": true,
         "summary": "Deletes a pet",
         "description": "Deletes a pet",
         "operationId": "deletePet",
         "parameters": [
           {
-            "name": "api_key",
+            "name": "extra_key",
             "in": "header",
             "description": "",
-            "required": false,
+            "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "format": "int64"
             }
           },
           {
@@ -383,15 +383,6 @@
             "schema": {
               "type": "integer",
               "format": "int64"
-            }
-          },
-          {
-            "name": "additionalMetadata",
-            "in": "query",
-            "description": "Additional Metadata",
-            "required": false,
-            "schema": {
-              "type": "string"
             }
           }
         ],
@@ -471,17 +462,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../models/2021-07-23/Order.json"
+                "$ref": "../../models/2021-07-24/Order.json"
               }
             },
             "application/xml": {
               "schema": {
-                "$ref": "../../models/2021-07-23/Order.json"
+                "$ref": "../../models/2021-07-24/Order.json"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "../../models/2021-07-23/Order.json"
+                "$ref": "../../models/2021-07-24/Order.json"
               }
             }
           }
@@ -492,7 +483,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/Order.json"
+                  "$ref": "../../models/2021-07-24/Order.json"
                 }
               }
             }
@@ -529,12 +520,12 @@
             "content": {
               "application/xml": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/Order.json"
+                  "$ref": "../../models/2021-07-24/Order.json"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/Order.json"
+                  "$ref": "../../models/2021-07-24/Order.json"
                 }
               }
             }
@@ -592,17 +583,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../models/2021-07-23/User.json"
+                "$ref": "../../models/2021-07-24/User.json"
               }
             },
             "application/xml": {
               "schema": {
-                "$ref": "../../models/2021-07-23/User.json"
+                "$ref": "../../models/2021-07-24/User.json"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "../../models/2021-07-23/User.json"
+                "$ref": "../../models/2021-07-24/User.json"
               }
             }
           }
@@ -613,12 +604,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/User.json"
+                  "$ref": "../../models/2021-07-24/User.json"
                 }
               },
               "application/xml": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/User.json"
+                  "$ref": "../../models/2021-07-24/User.json"
                 }
               }
             }
@@ -640,7 +631,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "../../models/2021-07-23/User.json"
+                  "$ref": "../../models/2021-07-24/User.json"
                 }
               }
             }
@@ -652,12 +643,12 @@
             "content": {
               "application/xml": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/User.json"
+                  "$ref": "../../models/2021-07-24/User.json"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/User.json"
+                  "$ref": "../../models/2021-07-24/User.json"
                 }
               }
             }
@@ -683,7 +674,7 @@
             "description": "The user name for login",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
           },
           {
@@ -775,12 +766,12 @@
             "content": {
               "application/xml": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/User.json"
+                  "$ref": "../../models/2021-07-24/User.json"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "../../models/2021-07-23/User.json"
+                  "$ref": "../../models/2021-07-24/User.json"
                 }
               }
             }
@@ -816,17 +807,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "../../models/2021-07-23/User.json"
+                "$ref": "../../models/2021-07-24/User.json"
               }
             },
             "application/xml": {
               "schema": {
-                "$ref": "../../models/2021-07-23/User.json"
+                "$ref": "../../models/2021-07-24/User.json"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "../../models/2021-07-23/User.json"
+                "$ref": "../../models/2021-07-24/User.json"
               }
             }
           }

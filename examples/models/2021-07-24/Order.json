@@ -15,9 +15,8 @@
       "nullable": true
     },
     "quantity": {
-      "type": "integer",
-      "format": "int32",
-      "example": 7,
+      "type": "string",
+      "format": "date-time",
       "nullable": true
     },
     "shipDate": {
@@ -44,5 +43,8 @@
       "type": "boolean",
       "nullable": true
     }
-  }
+  },
+  "required": [
+    "id"
+  ]
 }
