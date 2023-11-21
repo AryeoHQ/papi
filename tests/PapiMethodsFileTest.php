@@ -17,9 +17,9 @@ class PapiMethodsFileTest extends TestCase
 
     public function testValidFilePath()
     {
-        $this->assertTrue(PapiMethods::validFilePath($this->papi_dir.'/phpunit.xml'));
-        $this->assertFalse(PapiMethods::validFilePath($this->papi_dir.'/app'));
-        $this->assertFalse(PapiMethods::validFilePath($this->papi_dir.'/unknown'));
+        $this->assertTrue(PapiMethods::validFilePath($this->papi_dir . '/phpunit.xml'));
+        $this->assertFalse(PapiMethods::validFilePath($this->papi_dir . '/app'));
+        $this->assertFalse(PapiMethods::validFilePath($this->papi_dir . '/unknown'));
     }
 
     public function testSpecTestDirectory()
@@ -34,7 +34,7 @@ class PapiMethodsFileTest extends TestCase
 
     public function testScanDirRecursively()
     {
-        $files = PapiMethods::scandirRecursively(getcwd().'/bin');
+        $files = PapiMethods::scandirRecursively(getcwd() . '/bin');
 
         $this->assertCount(1, $files);
         $this->assertEquals($files[0], 'papi');
@@ -67,19 +67,19 @@ class PapiMethodsFileTest extends TestCase
 
     public function testSpecFilesInDir()
     {
-        $examples_dir = $this->papi_dir.'/examples';
+        $examples_dir = $this->papi_dir . '/examples';
 
-        $files = PapiMethods::specFilesInDir($examples_dir.'/reference/PetStore', 'json');
-        $this->assertCount(2, $files);
+        $files = PapiMethods::specFilesInDir($examples_dir . '/reference/PetStore', 'json');
+        $this->assertCount(3, $files);
 
-        $files = PapiMethods::specFilesInDir($examples_dir.'/reference/PetStore', 'js');
+        $files = PapiMethods::specFilesInDir($examples_dir . '/reference/PetStore', 'js');
         $this->assertCount(0, $files);
     }
 
     public function testSpecNameAndVersion()
     {
-        $spec_file = $this->papi_dir.'/examples/reference/PetStore/PetStore.2021-07-23.json';
-        
+        $spec_file = $this->papi_dir . '/examples/reference/PetStore/PetStore.2021-07-23.json';
+
         $results = PapiMethods::specNameAndVersion($spec_file);
 
         $this->assertEquals($results[0], 'PetStore');

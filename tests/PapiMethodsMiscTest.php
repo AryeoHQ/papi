@@ -3,8 +3,8 @@
 namespace Tests;
 
 use App\Methods\PapiMethods;
-use cebe\openapi\spec\OpenApi;
 use PHPUnit\Framework\TestCase;
+use cebe\openapi\spec\OpenApi;
 
 class PapiMethodsMiscTest extends TestCase
 {
@@ -75,7 +75,7 @@ class PapiMethodsMiscTest extends TestCase
                 ]
             ]
         ]);
-        
+
         $results = [];
 
         foreach (PapiMethods::matchingOperationKeys($openapi_a, $openapi_b) as $index => $result) {
@@ -109,7 +109,7 @@ class PapiMethodsMiscTest extends TestCase
 
     public function testModels()
     {
-        $models_dir = $this->papi_dir.'/examples/models/2021-07-23';
+        $models_dir = $this->papi_dir . '/examples/models/2021-07-23';
 
         $results = PapiMethods::models($models_dir, 'json');
 
@@ -120,7 +120,7 @@ class PapiMethodsMiscTest extends TestCase
 
     public function testOperations()
     {
-        $spec_file = $this->papi_dir.'/examples/reference/PetStore/PetStore.2021-07-23.json';
+        $spec_file = $this->papi_dir . '/examples/reference/PetStore/PetStore.2021-07-23.json';
 
         $results = PapiMethods::operationsKeys($spec_file);
 
@@ -217,12 +217,13 @@ class PapiMethodsMiscTest extends TestCase
 
     public function testVersionsEqualToOrBelow()
     {
-        $spec_dir = $this->papi_dir.'/examples/reference/PetStore';
+        $spec_dir = $this->papi_dir . '/examples/reference/PetStore';
 
         $this->assertEquals(
             [
                 '2021-07-24',
-                '2021-07-23'
+                '2021-07-23',
+                '2021-07-23-changed'
             ],
             PapiMethods::versionsEqualToOrBelow($spec_dir, '2021-07-24', 'json')
         );
@@ -230,7 +231,7 @@ class PapiMethodsMiscTest extends TestCase
 
     public function testVersionsBetween()
     {
-        $spec_dir = $this->papi_dir.'/examples/reference/PetStore';
+        $spec_dir = $this->papi_dir . '/examples/reference/PetStore';
 
         $this->assertEquals(
             [],
