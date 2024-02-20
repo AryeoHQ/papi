@@ -16,12 +16,12 @@ class SpecController extends PapiController
             ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
             ['s_path', 'path to spec file', '/examples/reference/PetStore/PetStore.2021-07-23.json', true],
             ['r_path', 'path to responses JSON file', '/examples/responses.json', true],
-            ['rm_path', 'path to response mappings JSON file', '/examples/response-mappings.json', true]
+            ['rm_path', 'path to response mappings JSON file', '/examples/response-mappings.json', true],
         ];
         $this->notes = [
             'Cleaning a spec inserts standard error responses for known status',
             'codes. Use the response mappings JSON file to map responses to HTTP verbs.',
-            'The \"*\" key may be used to match any HTTP verb.'
+            'The \"*\" key may be used to match any HTTP verb.',
         ];
     }
 
@@ -43,16 +43,19 @@ class SpecController extends PapiController
     {
         if (!PapiMethods::validFilePath($spec_file_path)) {
             $this->printFileNotFound($spec_file_path);
+
             return;
         }
 
         if (!PapiMethods::validFilePath($responses_path)) {
             $this->printFileNotFound($responses_path);
+
             return;
         }
 
         if (!PapiMethods::validFilePath($response_mappings_path)) {
             $this->printFileNotFound($response_mappings_path);
+
             return;
         }
 
@@ -65,9 +68,8 @@ class SpecController extends PapiController
         foreach ($array['paths'] as $path_key => $path) {
             foreach ($path as $method_key => $method_key_obj) {
                 if ($method_key !== 'parameters') {
-                    foreach ($array['paths'][$path_key][$method_key]['responses'] as $status_code => $response) {
+                    foreach ($array['paths'][$path_key][$method_key]['responses'] as $response) {
                         $http_verb = strtoupper($method_key);
-                        $status_code_int = intval($status_code);
                         $verb_is_mapped = isset($response_mappings_array[$http_verb]);
 
                         if ($verb_is_mapped) { // is this HTTP verb defined in response mappings JSON file?
@@ -78,13 +80,8 @@ class SpecController extends PapiController
                             $mapped_status_codes = [];
                         }
 
-                        $valid_status_code = $status_code_int >= 100 && $status_code_int <= 599;
-                        $valid_status_code_mapping = is_array($mapped_status_codes);
-
-                        if ($valid_status_code && $valid_status_code_mapping) {
-                            if (in_array($status_code, $mapped_status_codes) && isset($responses_array[$status_code])) {
-                                $array['paths'][$path_key][$method_key]['responses'][$status_code] = $responses_array[$status_code];
-                            }
+                        foreach ($mapped_status_codes as $status_code) {
+                            $array['paths'][$path_key][$method_key]['responses'][$status_code] = $responses_array[$status_code];
                         }
                     }
                 }
