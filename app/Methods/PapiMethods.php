@@ -343,7 +343,10 @@ class PapiMethods
         if ($object !== null) {
             $schema = [];
             if (isset($object->content['application/json'])) {
-                $schema = $object->content['application/json']->getSerializableData()->schema;
+                $serialized_data = $object->content['application/json']->getSerializableData();
+                if (isset($serialized_data->schema)) {
+                    $schema = $serialized_data->schema;
+                }
             }
             return PapiMethods::objectToArray($schema);
         } else {
