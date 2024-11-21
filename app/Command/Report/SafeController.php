@@ -166,22 +166,24 @@ class SafeController extends PapiController
             $last_responses = isset($last_operation->responses) ?? [];
 
             // for each response...
-            if (count($last_responses) > 0) {
-                foreach ($last_responses as $status_code => $last_operation_response) {
-                    $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
+            if (is_countable($last_responses)) {
+                if (count($last_responses) > 0) {
+                    foreach ($last_responses as $status_code => $last_operation_response) {
+                        $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
-                    // does the current spec have a response for this status code?
-                    if ($current_operation_response) {
-                        // are the properties the same?
-                        $error = $this->schemaDiff(
-                            PapiMethods::getSchemaArrayFromSpecObject($last_operation_response),
-                            PapiMethods::getSchemaArrayFromSpecObject($current_operation_response),
-                            PapiMethods::formatOperationKey($operation_key),
-                            $status_code
-                        );
+                        // does the current spec have a response for this status code?
+                        if ($current_operation_response) {
+                            // are the properties the same?
+                            $error = $this->schemaDiff(
+                                PapiMethods::getSchemaArrayFromSpecObject($last_operation_response),
+                                PapiMethods::getSchemaArrayFromSpecObject($current_operation_response),
+                                PapiMethods::formatOperationKey($operation_key),
+                                $status_code
+                            );
 
-                        if ($error) {
-                            $errors[] = $error;
+                            if ($error) {
+                                $errors[] = $error;
+                            }
                         }
                     }
                 }
