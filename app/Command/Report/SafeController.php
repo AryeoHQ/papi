@@ -163,7 +163,7 @@ class SafeController extends PapiController
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
-            $last_responses = $last_operation->responses;
+            $last_responses = isset($last_operation->responses) ?? [];
 
             // for each response...
             if (count($last_responses) > 0) {
@@ -257,10 +257,10 @@ class SafeController extends PapiController
 
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
-            $last_operation_responses = PapiMethods::getOperation($last_open_api, $operation_key)->responses;
+            $last_operation_responses = isset(PapiMethods::getOperation($last_open_api, $operation_key)->responses) ?? [];
             $last_operation_codes = array_keys(PapiMethods::objectToArray($last_operation_responses));
 
-            $current_operation_responses = PapiMethods::getOperation($current_open_api, $operation_key)->responses;
+            $current_operation_responses = isset(PapiMethods::getOperation($current_open_api, $operation_key)->responses) ?? [];
             $current_operation_codes = array_keys(PapiMethods::objectToArray($current_operation_responses));
 
             $diff = array_diff($last_operation_codes, $current_operation_codes);
@@ -322,9 +322,10 @@ class SafeController extends PapiController
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
+            $last_operation_responses = isset($last_operation->responses) ?? [];
 
             // for each response...
-            foreach ($last_operation->responses as $status_code => $last_operation_response) {
+            foreach ($last_operation_responses as $status_code => $last_operation_response) {
                 $current_operation_response = PapiMethods::getOperationResponse($current_open_api, $operation_key, $status_code);
 
                 // does the current spec have a response for this status code?
@@ -423,7 +424,7 @@ class SafeController extends PapiController
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
-            $last_operation_responses = $last_operation->responses;
+            $last_operation_responses = isset($last_operation->responses) ?? [];
             $last_operation_parameters = $last_operation->parameters;
 
             $current_operation = PapiMethods::getOperation($current_open_api, $operation_key);
@@ -524,7 +525,7 @@ class SafeController extends PapiController
         // for matching operations...
         foreach (PapiMethods::matchingOperationKeys($last_open_api, $current_open_api) as $operation_key) {
             $last_operation = PapiMethods::getOperation($last_open_api, $operation_key);
-            $last_operation_responses = $last_operation->responses;
+            $last_operation_responses = isset($last_operation->responses) ?? [];
 
             // for each response...
             foreach ($last_operation_responses as $status_code => $last_operation_response) {
