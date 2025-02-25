@@ -73,7 +73,7 @@ class SafeController extends PapiController
         $section_results[] = $this->checkRequestBodyPropertyRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkOperationMethodDirectRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkOperationMethodDeprecatedRemovals($last_open_api, $current_open_api);
-        $section_results[] = $this->checkOperationMethodInternalRemovals($last_open_api, $current_open_api);
+        $section_results[] = $this->checkOperationMethodExternalAdditions($last_open_api, $current_open_api);
         $section_results[] = $this->checkResponseRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkQueryParamRemovals($last_open_api, $current_open_api);
         $section_results[] = $this->checkHeaderRemovals($last_open_api, $current_open_api);
@@ -246,11 +246,11 @@ class SafeController extends PapiController
         return new SectionResults('Operations Marked Deprecated', $errors);
     }
 
-    public function checkOperationMethodInternalRemovals($last_open_api, $current_open_api)
+    public function checkOperationMethodExternalAdditions($last_open_api, $current_open_api)
     {
-        $errors = $this->operationDiff($last_open_api, $current_open_api, 'x-internal', 'internal');
+        $errors = $this->operationDiff($last_open_api, $current_open_api, 'x-external', 'external');
 
-        return new SectionResults('Operations Marked Internal', $errors);
+        return new SectionResults('Operations Marked External', $errors);
     }
 
     public function checkResponseRemovals($last_open_api, $current_open_api)
