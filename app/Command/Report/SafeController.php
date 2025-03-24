@@ -799,13 +799,22 @@ class SafeController extends PapiController
                 if ($b_schema_property_type_map[$a_property_path]) {
                     $b_property_value = $b_schema_property_type_map[$a_property_path];
 
-                    if (strcmp($a_property_value, $b_property_value) !== 0 && $a_property_path !== 'root.title') {
+                    // Convert string types to arrays for consistent comparison
+                    $a_types = is_array($a_property_value) ? $a_property_value : [$a_property_value];
+                    $b_types = is_array($b_property_value) ? $b_property_value : [$b_property_value];
+
+                    // Sort arrays to make comparison order-independent
+                    sort($a_types);
+                    sort($b_types);
+
+                    if ($a_property_path !== 'root.title' &&
+                        (count($a_types) !== count($b_types) || array_diff($a_types, $b_types))) {
                         $errors[] = sprintf(
                             '%s (%s): Type mismatch (`%s`|`%s`) for `%s`.',
                             $subject,
                             $location,
-                            $a_property_value,
-                            $b_property_value,
+                            $this->formatTypeValue($a_property_value),
+                            $this->formatTypeValue($b_property_value),
                             $a_property_path
                         );
                     }
@@ -814,6 +823,20 @@ class SafeController extends PapiController
         }
 
         return $errors;
+    }
+
+    /**
+     * Format type value for display in error messages
+     *
+     * @param string|array $type
+     * @return string
+     */
+    private function formatTypeValue($type): string
+    {
+        if (is_array($type)) {
+            return '[' . implode(', ', $type) . ']';
+        }
+        return $type;
     }
 
     public function schemaPropertyRequiredDiff($a_schema, $b_schema, $subject)

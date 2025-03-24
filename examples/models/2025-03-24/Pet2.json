@@ -1,0 +1,25 @@
+{
+  "title": "Pet",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "int64",
+      "example": 10
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "example": "doggie"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ]
+}
