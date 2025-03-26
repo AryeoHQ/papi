@@ -849,7 +849,7 @@ class SafeController extends PapiController
 
         // all required properties the same?
         foreach ($a_schema_property_required_map as $a_object_path => $a_object_properties_required) {
-            if ($b_schema_property_required_map[$a_object_path]) {
+            if (isset($b_schema_property_required_map[$a_object_path])) {
                 $b_object_properties_required = $b_schema_property_required_map[$a_object_path];
 
                 $diff = array_diff($b_object_properties_required, $a_object_properties_required);
