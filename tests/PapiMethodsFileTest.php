@@ -70,7 +70,7 @@ class PapiMethodsFileTest extends TestCase
         $examples_dir = $this->papi_dir . '/examples';
 
         $files = PapiMethods::specFilesInDir($examples_dir . '/reference/PetStore', 'json');
-        $this->assertCount(3, $files);
+        $this->assertCount(5, $files);
 
         $files = PapiMethods::specFilesInDir($examples_dir . '/reference/PetStore', 'js');
         $this->assertCount(0, $files);

@@ -5,12 +5,13 @@ namespace App\Command\Clean;
 use App\Command\PapiController;
 use App\Methods\PapiMethods;
 use Minicli\App;
+use Minicli\Command\CommandCall;
 
 class ModelsController extends PapiController
 {
-    public function boot(App $app)
+    public function boot(App $app, CommandCall $input): void
     {
-        parent::boot($app);
+        parent::boot($app, $input);
         $this->description = 'clean models';
         $this->parameters = [
             ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
@@ -24,7 +25,7 @@ class ModelsController extends PapiController
         ];
     }
 
-    public function handle()
+    public function handle(): void
     {
         $args = array_slice($this->getArgs(), 3);
 

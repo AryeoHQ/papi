@@ -5,14 +5,15 @@ namespace App\Command\Report;
 use App\Command\PapiController;
 use App\Methods\PapiMethods;
 use Minicli\App;
+use Minicli\Command\CommandCall;
 
 class RefsController extends PapiController
 {
     protected $unreferenced_models = [];
 
-    public function boot(App $app)
+    public function boot(App $app, CommandCall $input): void
     {
-        parent::boot($app);
+        parent::boot($app, $input);
         $this->description = 'report out-of-date refs';
         $this->parameters = [
             ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
@@ -21,7 +22,7 @@ class RefsController extends PapiController
         ];
     }
 
-    public function handle()
+    public function handle(): void
     {
         $args = array_slice($this->getArgs(), 3);
 

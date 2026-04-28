@@ -5,12 +5,13 @@ namespace App\Command\Make;
 use App\Command\PapiController;
 use App\Methods\PapiMethods;
 use Minicli\App;
+use Minicli\Command\CommandCall;
 
 class TestsController extends PapiController
 {
-    public function boot(App $app)
+    public function boot(App $app, CommandCall $input): void
     {
-        parent::boot($app);
+        parent::boot($app, $input);
         $this->description = 'make missing spec tests given an api spec';
         $this->parameters = [
             ['format', 'spec format, defaults to JSON (JSON|YAML)', 'JSON', false],
@@ -21,7 +22,7 @@ class TestsController extends PapiController
         $this->notes = ['Tests will be created in the [p_dir]/tests/Spec directory.'];
     }
 
-    public function handle()
+    public function handle(): void
     {
         $args = array_slice($this->getArgs(), 3);
 

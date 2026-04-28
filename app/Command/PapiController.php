@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use Minicli\App;
+use Minicli\Command\CommandCall;
 use Minicli\Command\CommandController;
 
 class PapiController extends CommandController
@@ -14,11 +15,11 @@ class PapiController extends CommandController
     protected $flags;
     protected $notes;
 
-    public function boot(App $app)
+    public function boot(App $app, CommandCall $input): void
     {
-        parent::boot($app);
+        parent::boot($app, $input);
 
-        $this->command_map = $app->command_registry->getCommandMap();
+        $this->command_map = $app->commandRegistry->getCommandMap();
         $this->description = '[description]';
         $this->arguments = [];
         $this->parameters = [];
@@ -26,7 +27,7 @@ class PapiController extends CommandController
         $this->notes = [];
     }
 
-    public function handle()
+    public function handle(): void
     {
         $this->getPrinter()->out('Not implemented.', 'bold');
         $this->getPrinter()->newline();

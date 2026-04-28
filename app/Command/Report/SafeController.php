@@ -6,12 +6,13 @@ use App\Command\PapiController;
 use App\Methods\PapiMethods;
 use App\Models\SectionResults;
 use Minicli\App;
+use Minicli\Command\CommandCall;
 
 class SafeController extends PapiController
 {
-    public function boot(App $app)
+    public function boot(App $app, CommandCall $input): void
     {
-        parent::boot($app);
+        parent::boot($app, $input);
         $this->description = 'check if changes to an api are safe';
         $this->parameters = [
             ['l_spec', 'path to last spec reference', '/examples/out/PetStore/PetStore.LAST.json', true],
@@ -19,7 +20,7 @@ class SafeController extends PapiController
         ];
     }
 
-    public function handle()
+    public function handle(): void
     {
         $args = array_slice($this->getArgs(), 3);
 
