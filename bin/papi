@@ -15,6 +15,7 @@ if ($is_vendor_bin) {
 }
 
 $app_path = $root_app . '/app/Command';
+$papi_root = dirname(__DIR__);
 
 if ($is_vendor_bin) {
     $app_path = $root_app . '/vendor/aryeo/papi/app/Command';
@@ -27,7 +28,7 @@ require_once $root_app . '/vendor/autoload.php';
 use Minicli\App;
 use Minicli\Command\CommandCall;
 
-$app = new App(['app_path' => $app_path], './papi help', $root_app);
+$app = new App(['app_path' => $app_path], './papi help', $papi_root);
 $input = new CommandCall($argv);
 
 $app->runCommand($input->getRawArgs());
