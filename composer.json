@@ -35,9 +35,9 @@
   },
   "require": {
     "php": "^8.2",
-    "cebe/php-openapi": "^1.8",
+    "cebe/php-openapi": "^1.7",
     "minicli/minicli": "^4.2",
-    "symfony/yaml": "^6.4 || ^7.0"
+    "symfony/yaml": "^6.4 || ^7.0 || ^8.0"
   },
   "bin": [
     "bin/papi"
