@@ -27,7 +27,7 @@ require_once $root_app . '/vendor/autoload.php';
 use Minicli\App;
 use Minicli\Command\CommandCall;
 
-$app = new App(['app_path' => $app_path], './papi help');
+$app = new App(['app_path' => $app_path], './papi help', $root_app);
 $input = new CommandCall($argv);
 
 $app->runCommand($input->getRawArgs());
